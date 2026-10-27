@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PHONE_RE, normalizePhone, phoneToEmail } from '@/lib/site';
+import SheetTop from './SheetTop';
 
 function authError(error) {
   const m = (error?.message || '').toLowerCase();
@@ -48,8 +49,8 @@ export default function AuthModal({ initialMode = 'reg', why, onClose, onDone, a
   }
 
   const form = (
-    <form className="sheet narrow" onSubmit={submit} noValidate>
-      <h3>{reg ? 'حساب جديد' : 'تسجيل الدخول'}</h3>
+    <form className="sheet narrow has-top" onSubmit={submit} noValidate>
+      <SheetTop title={reg ? 'حساب جديد' : 'تسجيل الدخول'} onClose={onClose} />
       <p className="sub">{reg ? 'بالاسم ورقم التليفون وكلمة سر بس.' : 'برقم التليفون وكلمة السر.'}</p>
       {why && <div className="auth-why">{why}</div>}
       {allowRegister && (

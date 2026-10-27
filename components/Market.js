@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { SITE, money, listingCode, waLink, userInfo, PHONE_RE, normalizePhone } from '@/lib/site';
 import { useSession, useToast, useBodyLock, useEscape } from './hooks';
 import AuthModal from './AuthModal';
+import SheetTop from './SheetTop';
 import Footer from './Footer';
 import { WhatsAppIcon } from './icons';
 
@@ -102,6 +103,7 @@ export default function Market() {
               {menuOpen && (
                 <div className="menu">
                   <div>{me.name}<br /><span className="num">{me.phone}</span></div>
+                  <button onClick={() => { setMenuOpen(false); setModal({ type: 'mine' }); }}>إعلاناتي</button>
                   <button onClick={signOut}>تسجيل خروج</button>
                 </div>
               )}
@@ -266,12 +268,82 @@ export default function Market() {
             <h3 id="sent-title">تم إرسال الإعلان</h3>
             <p>سيتم مراجعة إعلانك ونشره في أقرب وقت.<br />نتمنى لك التوفيق.</p>
             <button className="btn primary block" onClick={() => setModal(null)} autoFocus>تمام</button>
+            <button className="btn block" onClick={() => setModal({ type: 'mine' })}>تابع إعلاناتي</button>
           </div>
         </div>
       )}
 
+      {modal?.type === 'mine' && me && (
+        <MyListings onClose={() => setModal(null)} onNew={() => setModal({ type: 'offer' })} />
+      )}
+
       {toast && <div className="toast" role="status">{toast}</div>}
     </>
+  );
+}
+
+const MY_STATUS = {
+  pending: { label: 'مستني المراجعة', note: 'الإدارة هتراجع إعلانك وتنشره في أقرب وقت.' },
+  approved: { label: 'اتنشر', note: 'إعلانك ظاهر دلوقتي في الصفحة.' },
+  rejected: { label: 'اترفض', note: 'لو عندك استفسار عن سبب الرفض كلمنا على واتساب.' },
+  sold: { label: 'اتباعت', note: 'القطعة اتشالت من الصفحة علشان اتباعت.' },
+};
+
+function MyListings({ onClose, onNew }) {
+  const [items, setItems] = useState(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    supabase.rpc('nob_my_listings').then(({ data, error }) => {
+      if (error) { setFailed(true); setItems([]); } else setItems(data);
+    });
+  }, []);
+
+  return (
+    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="sheet has-top mine" role="dialog" aria-label="إعلاناتي">
+        <SheetTop title="إعلاناتي" onClose={onClose} />
+        {items === null ? (
+          <p className="muted">بنحمّل إعلاناتك...</p>
+        ) : failed ? (
+          <p className="form-error">مقدرناش نحمّل إعلاناتك. جرب تاني بعد شوية.</p>
+        ) : items.length === 0 ? (
+          <div className="mine-empty">
+            <p>لسه معرضتش أي قطعة.</p>
+            <button className="btn primary" onClick={onNew}>+ اعرض قطعتك</button>
+          </div>
+        ) : (
+          <div className="mine-list">
+            {items.map((x) => {
+              const st = MY_STATUS[x.status] || MY_STATUS.pending;
+              return (
+                <article key={x.id} className={`mine-item st-${x.status}-edge`}>
+                  <div className="mine-head">
+                    <b>{x.zone} · <span className="num">{Number(x.area)}</span> م²</b>
+                    <span className={`pill st-${x.status}`}>{st.label}</span>
+                  </div>
+                  <div className="mine-meta muted">
+                    <span>كود <span className="num">{listingCode(x.id)}</span></span>
+                    {x.plot_number && <span>قطعة <span className="num">{x.plot_number}</span></span>}
+                    <span>اتبعت {new Date(x.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}</span>
+                  </div>
+                  <div className="mine-money">
+                    <span>الإجمالي <b className="num">{money(x.price)}</b></span>
+                    <span>المدفوع <b className="num paid">{money(x.paid)}</b></span>
+                    <span>المتبقي <b className="num rem">{money(x.remaining)}</b></span>
+                  </div>
+                  <p className="mine-note">
+                    {st.note}
+                    {x.status === 'rejected' && (
+                      <> <a href={waLink(`بخصوص إعلاني كود ${listingCode(x.id)}`)} target="_blank" rel="noopener noreferrer">كلمنا على واتساب</a></>
+                    )}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -342,8 +414,8 @@ function OfferForm({ me, onClose, onDone }) {
 
   return (
     <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <form className="sheet" onSubmit={submit} noValidate>
-        <h3>اعرض قطعتك</h3>
+      <form className="sheet has-top" onSubmit={submit} noValidate>
+        <SheetTop title="اعرض قطعتك" onClose={onClose} />
         <p className="sub">الإعلان هيوصل لإدارة جولدن بيت الأول، وبعد الموافقة هينزل في الصفحة.</p>
         <div className="grid">
           <div className="field"><label htmlFor="i-zone">المنطقة</label>
