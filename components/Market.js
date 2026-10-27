@@ -89,10 +89,10 @@ export default function Market() {
         <div className="wrap top">
           <a className="brand" href="/" aria-label={SITE.name}>
             <img src="/logo.png" alt="جولدن بيت Golden Beit" />
-            <span className="sub"><b>{SITE.name}</b><small>القادسية · الأمل</small></span>
+            <span className="sub"><b><span>Golden Beit</span> <span>New Obour</span></b><small>القادسية · الأمل</small></span>
           </a>
           <button className="btn primary" onClick={() => requireUser('علشان تعرض قطعتك لازم تسجل حساب الأول.', () => setModal({ type: 'offer' }))}>
-            + اعرض قطعتك
+            + اعرض<span className="long">&nbsp;قطعتك</span>
           </button>
           {user === undefined ? null : me ? (
             <div className="me">

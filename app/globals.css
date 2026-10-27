@@ -222,9 +222,13 @@ tbody tr.sel { box-shadow: inset -3px 0 0 var(--teal); }
 
 /* ---------- phones ---------- */
 @media (max-width: 760px) {
-  .brand img { height: 42px; }
+  .top { gap: 8px; }
+  .brand { gap: 8px; }
+  .brand img { height: 40px; }
+  .brand .sub { padding-inline-start: 8px; }
   .brand .sub small { display: none; }
-  .brand .sub b { font-size: 13px; }
+  .brand .sub b { font-size: 12.5px; line-height: 1.25; }
+  .brand .sub b span { display: block; }
   .site-header .btn { padding: 8px 11px; min-height: 38px; font-size: 13px; }
   .me > button span.name { display: none; }
   .stats { grid-template-columns: repeat(2, 1fr); gap: 8px; padding-top: 12px; }
@@ -261,6 +265,9 @@ tbody tr.sel { box-shadow: inset -3px 0 0 var(--teal); }
   .admin-tabs [role="tab"] { padding: 8px 12px; font-size: 13px; }
   .admin-tabs .refresh { margin-inline-start: 0; }
 }
-@media (max-width: 380px) { .brand .sub { display: none; } }
+@media (max-width: 360px) {
+  .site-header .btn .long { display: none; }
+  .brand img { height: 34px; }
+}
 @media (min-width: 761px) { .factions .apply { display: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
