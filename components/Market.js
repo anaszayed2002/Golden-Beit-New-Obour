@@ -247,7 +247,20 @@ export default function Market() {
 
       {modal?.type === 'offer' && me && (
         <OfferForm me={me} onClose={() => setModal(null)}
-          onDone={() => { setModal(null); showToast('اتبعت. هينزل في الصفحة بعد موافقة الإدارة'); }} />
+          onDone={() => setModal({ type: 'sent' })} />
+      )}
+
+      {modal?.type === 'sent' && (
+        <div className="modal center" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
+          <div className="sheet narrow done-pop" role="alertdialog" aria-labelledby="sent-title">
+            <div className="done-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+            </div>
+            <h3 id="sent-title">تم إرسال الإعلان</h3>
+            <p>سيتم مراجعة إعلانك ونشره في أقرب وقت.<br />نتمنى لك التوفيق.</p>
+            <button className="btn primary block" onClick={() => setModal(null)} autoFocus>تمام</button>
+          </div>
+        </div>
       )}
 
       {toast && <div className="toast" role="status">{toast}</div>}
@@ -287,7 +300,7 @@ function Drawer({ item: x, onClose, onOrder }) {
 function OfferForm({ me, onClose, onDone }) {
   const [f, setF] = useState({
     zone: SITE.zones[0], plot: '', area: '', ownership: SITE.ownership[0], ready: false,
-    price: '', paid: '', remaining: '', phone: me.phone, desc: '',
+    price: '', paid: '', remaining: '', phone: '', desc: '',
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -303,6 +316,7 @@ function OfferForm({ me, onClose, onDone }) {
     if (!(price > 0)) return setError('اكتب السعر الإجمالي.');
     if (paid < 0 || remaining < 0) return setError('المدفوع والمتبقي لازم يكونوا أرقام موجبة.');
     if (paid > price) return setError('المدفوع أكبر من السعر الإجمالي. راجع الأرقام.');
+    if (!phone) return setError('اكتب رقم تليفونك.');
     if (!PHONE_RE.test(phone)) return setError('اكتب رقم تليفون مصري صح، زي 01012345678.');
     setBusy(true);
     const { error } = await supabase.rpc('nob_submit_listing', {
@@ -351,7 +365,7 @@ function OfferForm({ me, onClose, onDone }) {
               onChange={(e) => set('remaining', e.target.value)} />
             {f.remaining && <small className="hint num">{money(f.remaining)} ج</small>}</div>
           <div className="field"><label htmlFor="i-phone">رقم تليفونك</label>
-            <input id="i-phone" className="num" type="tel" inputMode="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} /></div>
+            <input id="i-phone" className="num" type="tel" inputMode="tel" autoComplete="off" placeholder="01xxxxxxxxx" value={f.phone} onChange={(e) => set('phone', e.target.value)} /></div>
           <div className="field full"><label htmlFor="i-desc">الوصف</label>
             <textarea id="i-desc" maxLength={2000} placeholder="اكتب أي تفاصيل: الاتجاه، الشارع، الأقساط، ميعاد التسليم..."
               value={f.desc} onChange={(e) => set('desc', e.target.value)} /></div>
