@@ -10,11 +10,19 @@ const TABS = [
   { key: 'approved', label: 'منشورة' },
   { key: 'requests', label: 'طلبات القطع' },
   { key: 'closed', label: 'مرفوضة ومتباعة' },
+  { key: 'customers', label: 'العملاء' },
 ];
 const STATUS = { pending: 'مستني موافقة', approved: 'منشور', rejected: 'مرفوض', sold: 'اتباعت' };
 
 const fmtDate = (d) => new Date(d).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 const waTo = (phone) => `https://wa.me/2${phone}`;
+// Lets the customer search match Arabic-Indic digits and "+20"/"0020" prefixes typed into the box.
+const normalizeQuery = (s) => {
+  const t = String(s || '').trim().toLowerCase()
+    .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+  return /^[+\d\s-]+$/.test(t) ? t.replace(/\D/g, '').replace(/^(00)?20(?=1)/, '0') : t;
+};
 
 function Phone({ value }) {
   if (!value) return <span className="muted">—</span>;
@@ -31,15 +39,20 @@ export default function Admin() {
   const [isAdmin, setIsAdmin] = useState(undefined);
   const [listings, setListings] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [query, setQuery] = useState('');
   const [tab, setTab] = useState('pending');
   const [busyId, setBusyId] = useState(null);
   const [toast, showToast] = useToast();
 
   const load = useCallback(async () => {
-    const [l, r] = await Promise.all([supabase.rpc('nob_admin_listings'), supabase.rpc('nob_admin_requests')]);
-    if (l.error || r.error) return showToast('مقدرناش نحمّل البيانات. جرب تحدّث الصفحة.');
+    const [l, r, c] = await Promise.all([
+      supabase.rpc('nob_admin_listings'), supabase.rpc('nob_admin_requests'), supabase.rpc('nob_admin_customers'),
+    ]);
+    if (l.error || r.error || c.error) return showToast('مقدرناش نحمّل البيانات. جرب تحدّث الصفحة.');
     setListings(l.data);
     setRequests(r.data);
+    setCustomers(c.data);
   }, [showToast]);
 
   useEffect(() => {
@@ -71,7 +84,12 @@ export default function Admin() {
     approved: listings.filter((x) => x.status === 'approved').length,
     requests: requests.filter((x) => !x.handled).length,
     closed: listings.filter((x) => x.status === 'rejected' || x.status === 'sold').length,
+    customers: customers.length,
   };
+  const q = normalizeQuery(query);
+  const shownCustomers = q
+    ? customers.filter((c) => (c.name || '').toLowerCase().includes(q) || (c.phone || '').includes(q))
+    : customers;
   const shown = tab === 'closed'
     ? listings.filter((x) => x.status === 'rejected' || x.status === 'sold')
     : listings.filter((x) => x.status === tab);
@@ -111,7 +129,47 @@ export default function Admin() {
               <button className="btn refresh" onClick={load}>تحديث</button>
             </div>
 
-            {tab === 'requests' ? (
+            {tab === 'customers' ? (
+              <section className="customers">
+                <div className="cust-tools">
+                  <input type="search" className="cust-search" placeholder="ابحث بالاسم أو رقم التليفون" aria-label="بحث في العملاء"
+                    value={query} onChange={(e) => setQuery(e.target.value)} />
+                  <span className="muted"><span className="num">{shownCustomers.length}</span> عميل</span>
+                </div>
+                {shownCustomers.length === 0 ? (
+                  <div className="state">{customers.length === 0 ? 'مفيش عملاء مسجلين لسه.' : 'مفيش عميل بالاسم أو الرقم ده.'}</div>
+                ) : (
+                  <>
+                    <div className="tablebox cust-table"><table>
+                      <thead><tr><th>الاسم</th><th>رقم التليفون</th><th>تاريخ التسجيل</th><th>إعلانات</th><th>طلبات قطع</th></tr></thead>
+                      <tbody>
+                        {shownCustomers.map((c) => (
+                          <tr key={c.id} className="static">
+                            <td className="zone">{c.name || <span className="muted">بدون اسم</span>}</td>
+                            <td><Phone value={c.phone} /></td>
+                            <td className="muted">{fmtDate(c.created_at)}</td>
+                            <td className="num">{c.listing_count}</td>
+                            <td className="num">{c.request_count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table></div>
+                    <div className="cust-rows">
+                      {shownCustomers.map((c) => (
+                        <div key={c.id} className="cust-row">
+                          <div className="cust-top"><b>{c.name || 'بدون اسم'}</b><span className="muted">{fmtDate(c.created_at)}</span></div>
+                          <Phone value={c.phone} />
+                          <div className="muted cust-stats">
+                            <span>إعلانات <b className="num">{c.listing_count}</b></span>
+                            <span>طلبات قطع <b className="num">{c.request_count}</b></span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </section>
+            ) : tab === 'requests' ? (
               requests.length === 0 ? <div className="state">مفيش طلبات لسه.</div> : (
                 <div className="alist">
                   {requests.map((r) => (

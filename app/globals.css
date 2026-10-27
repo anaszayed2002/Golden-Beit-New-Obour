@@ -232,6 +232,18 @@ tbody tr:hover .btn.more span { transform: translateX(-3px); }
 .phone-cell a { color: var(--forest); font-weight: 600; }
 .phone-cell .wa-mini { color: var(--wa); font-size: 12.5px; font-weight: 600; }
 .aacts { display: flex; gap: 8px; flex-wrap: wrap; }
+.cust-tools { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.cust-search { flex: 1; min-width: 0; max-width: 420px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; min-height: 44px; font-size: 16px; }
+.cust-table table { min-width: 640px; }
+.cust-table tbody tr.static { cursor: default; }
+.cust-rows { display: none; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.cust-row { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.cust-row:last-child { border-bottom: 0; }
+.cust-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.cust-top b { color: var(--forest); font-size: 15px; }
+.cust-top .muted { font-size: 12px; }
+.cust-stats { display: flex; gap: 16px; font-size: 12.5px; }
+.cust-stats b { color: var(--text); }
 
 /* ---------- phones ---------- */
 @media (max-width: 760px) {
@@ -279,6 +291,8 @@ tbody tr:hover .btn.more span { transform: translateX(-3px); }
   .alist { grid-template-columns: 1fr; }
   .admin-tabs [role="tab"] { padding: 8px 12px; font-size: 13px; }
   .admin-tabs .refresh { margin-inline-start: 0; }
+  .admin .cust-table { display: none; }
+  .admin .cust-rows { display: block; }
 }
 @media (max-width: 360px) {
   .site-header .btn .long { display: none; }
