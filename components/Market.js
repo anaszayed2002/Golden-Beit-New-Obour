@@ -185,9 +185,10 @@ export default function Market() {
             <div className="tablebox"><table>
               <thead><tr>
                 <th>المنطقة</th><th>المساحة</th><th>السعر الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الملكية</th><th>التسليم</th>
+                <th><span className="sr-only">التفاصيل</span></th>
               </tr></thead>
               <tbody>
-                {visible.length === 0 && <tr><td colSpan={7} className="empty">مفيش قطع بالمواصفات دي. جرّب توسّع الفلتر.</td></tr>}
+                {visible.length === 0 && <tr><td colSpan={8} className="empty">مفيش قطع بالمواصفات دي. جرّب توسّع الفلتر.</td></tr>}
                 {visible.map((x) => (
                   <tr key={x.id} tabIndex={0} className={selected?.id === x.id ? 'sel' : ''}
                     onClick={() => setSelected(x)} onKeyDown={(e) => e.key === 'Enter' && setSelected(x)}>
@@ -201,6 +202,11 @@ export default function Market() {
                     <td className="rem"><span className="num">{money(x.remaining)}</span><span className="cur">ج</span></td>
                     <td><span className="pill own">{x.ownership}</span></td>
                     <td>{x.ready ? <span className="pill ready">جاهز للتسليم</span> : <span className="pill">لسه</span>}</td>
+                    <td className="more-cell">
+                      <button className="btn more" tabIndex={-1} onClick={(e) => { e.stopPropagation(); setSelected(x); }}>
+                        تفاصيل أكثر <span aria-hidden="true">←</span>
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -219,6 +225,7 @@ export default function Market() {
                     <span>المدفوع <b className="paid num">{money(x.paid)}</b></span>
                     <span>المتبقي <b className="rem num">{money(x.remaining)}</b></span>
                   </div>
+                  <span className="btn more block" aria-hidden="true">تفاصيل أكثر <span>←</span></span>
                 </button>
               ))}
             </div>

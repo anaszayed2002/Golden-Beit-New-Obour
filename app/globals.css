@@ -96,7 +96,7 @@ a { color: inherit; }
 
 /* desktop table */
 .tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin-bottom: 36px; }
-table { width: 100%; border-collapse: collapse; min-width: 720px; }
+table { width: 100%; border-collapse: collapse; min-width: 840px; }
 th { font-size: 12px; font-weight: 600; color: var(--muted); text-align: start; padding: 11px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; background: #f6f9f7; }
 td { padding: 13px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 tbody tr { cursor: pointer; transition: background .12s; }
@@ -113,6 +113,13 @@ tbody tr.sel { box-shadow: inset -3px 0 0 var(--teal); }
 .pill.ready { color: #fff; background: var(--teal); border-color: var(--teal); }
 .bar { height: 4px; border-radius: 2px; background: var(--line); width: 80px; overflow: hidden; margin-top: 4px; }
 .bar span { display: block; height: 100%; background: var(--paid); }
+.more-cell { text-align: end; width: 1%; }
+.btn.more { min-height: 36px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--teal); background: var(--teal-soft); border-color: #0D5A4B40; }
+.btn.more span { transition: transform .15s; }
+tbody tr:hover .btn.more, .row:active .btn.more { background: var(--teal); color: #fff; border-color: var(--teal); }
+tbody tr:hover .btn.more span { transform: translateX(-3px); }
+.row .btn.more { margin-top: 4px; min-height: 40px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .empty { padding: 28px; text-align: center; color: var(--muted); }
 .state { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 48px 16px; margin-block: 8px 36px; background: var(--panel); border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); }
 .state b { color: var(--forest); font-size: 16px; }
