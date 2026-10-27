@@ -289,19 +289,10 @@ function OfferForm({ me, onClose, onDone }) {
     zone: SITE.zones[0], plot: '', area: '', ownership: SITE.ownership[0], ready: false,
     price: '', paid: '', remaining: '', phone: me.phone, desc: '',
   });
-  const [remTouched, setRemTouched] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  function set(k, v) {
-    setF((s) => {
-      const next = { ...s, [k]: v };
-      if ((k === 'price' || k === 'paid') && !remTouched && next.price !== '') {
-        next.remaining = String(Math.max(0, Number(next.price || 0) - Number(next.paid || 0)));
-      }
-      return next;
-    });
-  }
+  const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
 
   async function submit(e) {
     e.preventDefault();
@@ -357,7 +348,7 @@ function OfferForm({ me, onClose, onDone }) {
             {f.paid && <small className="hint num">{money(f.paid)} ج</small>}</div>
           <div className="field"><label htmlFor="i-rem">المتبقي (جنيه)</label>
             <input id="i-rem" type="number" inputMode="numeric" min="0" value={f.remaining}
-              onChange={(e) => { setRemTouched(true); set('remaining', e.target.value); }} />
+              onChange={(e) => set('remaining', e.target.value)} />
             {f.remaining && <small className="hint num">{money(f.remaining)} ج</small>}</div>
           <div className="field"><label htmlFor="i-phone">رقم تليفونك</label>
             <input id="i-phone" className="num" type="tel" inputMode="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} /></div>
