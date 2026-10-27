@@ -137,7 +137,7 @@ export default function Admin() {
                   <span className="muted"><span className="num">{shownCustomers.length}</span> عميل</span>
                 </div>
                 {shownCustomers.length === 0 ? (
-                  <div className="state">{customers.length === 0 ? 'مفيش عملاء مسجلين لسه.' : 'مفيش عميل بالاسم أو الرقم ده.'}</div>
+                  <div className="state">{customers.length === 0 ? 'مفيش عملاء على المنصة دي لسه.' : 'مفيش عميل بالاسم أو الرقم ده.'}</div>
                 ) : (
                   <>
                     <div className="tablebox cust-table"><table>

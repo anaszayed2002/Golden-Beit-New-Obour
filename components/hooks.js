@@ -10,6 +10,11 @@ export function useSession() {
     const { data } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null));
     return () => data.subscription.unsubscribe();
   }, []);
+  // Accounts are shared across Golden Beit platforms; this marks the account as a New Obour customer.
+  const userId = user?.id;
+  useEffect(() => {
+    if (userId) supabase.rpc('nob_touch').then(() => {}, () => {});
+  }, [userId]);
   return user;
 }
 
