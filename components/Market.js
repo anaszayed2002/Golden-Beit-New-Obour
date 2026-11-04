@@ -70,6 +70,7 @@ export default function Market() {
   const [filters, setFilters] = useState(EMPTY);
   const [sort, setSort] = useState('date:-1');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [modal, setModal] = useState(null); // 'offer' | {type:'sent', id}
   const [code, setCode] = useState('');
@@ -99,8 +100,8 @@ export default function Market() {
 
   useBodyLock(!!selected || !!modal || filtersOpen);
   useEscape(useCallback(() => {
-    if (modal) setModal(null); else if (filtersOpen) setFiltersOpen(false); else setSelected(null);
-  }, [modal, filtersOpen]));
+    if (sortOpen) setSortOpen(false); else if (modal) setModal(null); else if (filtersOpen) setFiltersOpen(false); else setSelected(null);
+  }, [modal, filtersOpen, sortOpen]));
 
   function openCode(e) {
     e.preventDefault();
@@ -153,9 +154,7 @@ export default function Market() {
           <div className="stat-kids">
             {SITE.zones.map((z) => (
               <button key={z} className="stat-kid" aria-pressed={filters.zone === z} onClick={() => set('zone', filters.zone === z ? '' : z)}>
-                <span>{z}</span><strong className="num">{all.filter((x) => x.zone === z).length}</strong>
-                <small className="num">{all.length ? Math.round((all.filter((x) => x.zone === z).length / all.length) * 100) : 0}%</small>
-              </button>
+                <span>{z}</span><strong className="num">{all.filter((x) => x.zone === z).length}</strong>              </button>
             ))}
           </div>
         </div>
@@ -165,12 +164,23 @@ export default function Market() {
           <button className="btn" id="filter-btn" onClick={() => setFiltersOpen(true)}>
             الفلتر {nActive > 0 && <span className="fcount num">{nActive}</span>}
           </button>
-          <select className="sortsel" aria-label="ترتيب" value={sort} onChange={(e) => setSort(e.target.value)}>
-            {SORT_FIELDS.map(([k, t]) => [
-              <option key={k + '-1'} value={`${k}:-1`}>{k === 'date' ? 'الأحدث الأول' : k === 'code' ? 'كود الوحدة: الأكبر الأول' : `${t}: تنازلي`}</option>,
-              <option key={k + '1'} value={`${k}:1`}>{k === 'date' ? 'الأقدم الأول' : k === 'code' ? 'كود الوحدة: الأصغر الأول' : `${t}: تصاعدي`}</option>,
-            ])}
-          </select>
+          <div className="sortwrap">
+            <button className="btn sortbtn" aria-haspopup="listbox" aria-expanded={sortOpen} onClick={() => setSortOpen((o) => !o)}>
+              رتب القطع حسب
+              <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+            </button>
+            {sortOpen && (<>
+              <div className="sort-scrim" onClick={() => setSortOpen(false)} />
+              <div className="sortmenu" role="listbox" aria-label="رتب القطع حسب">
+                {SORT_FIELDS.map(([k, t]) => [
+                  [`${k}:-1`, k === 'date' ? 'الأحدث الأول' : k === 'code' ? 'كود الوحدة: الأكبر الأول' : `${t}: تنازلي`],
+                  [`${k}:1`, k === 'date' ? 'الأقدم الأول' : k === 'code' ? 'كود الوحدة: الأصغر الأول' : `${t}: تصاعدي`],
+                ]).flat().map(([v, label]) => (
+                  <button key={v} role="option" aria-selected={sort === v} onClick={() => { setSort(v); setSortOpen(false); }}>{label}</button>
+                ))}
+              </div>
+            </>)}
+          </div>
         </div>
 
         {filtersOpen && <div className="scrim filters-scrim" onClick={() => setFiltersOpen(false)} />}
