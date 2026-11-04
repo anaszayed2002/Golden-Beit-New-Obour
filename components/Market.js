@@ -243,15 +243,30 @@ export default function Market() {
               {visible.length === 0 && <div className="empty">مفيش قطع بالمواصفات دي. جرّب توسّع الفلتر.</div>}
               {visible.map((x) => (
                 <button key={x.id} className="row" onClick={() => setSelected(x)}>
-                  <div className="l1">
-                    <span className="zone">{x.zone}</span>
-                    <span className="muted"><span className="num">{areaOf(x)}</span> م²</span>
-                    <span className="code num">{listingCode(x.id)}</span>
+                  <div className="r-top">
+                    <span className="r-zone">{x.zone}</span>
+                    <span className="r-code">كود الوحدة <b className="num">{listingCode(x.id)}</b></span>
                   </div>
-                  <div className="l2">{[x.district, x.neighborhood, statusLabel(x.land_status)].filter(Boolean).join(' · ')}</div>
-                  <div className="l3"><b className="num">{money(x.price)}</b><span className="cur">جنيه</span></div>
+                  {(x.district || x.neighborhood) && (
+                    <div className="r-loc">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" />
+                      </svg>
+                      {[x.district, x.neighborhood].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
+                  <div className="r-facts">
+                    <div><span className="k">المساحة</span><b><span className="num">{areaOf(x)}</span> م²</b></div>
+                    {x.land_status
+                      ? <div><span className="k">الحالة</span><b>{statusLabel(x.land_status)}</b></div>
+                      : x.facade ? <div><span className="k">الواجهة</span><b>{x.facade}</b></div> : null}
+                  </div>
+                  <div className="r-price">
+                    <span className="k">السعر المطلوب</span>
+                    <b><span className="num">{money(x.price)}</span> <small>جنيه</small></b>
+                  </div>
                   {hasPayment(x) && (
-                    <div className="l4">
+                    <div className="r-pay">
                       <span>المطلوب دفعه <b className="paid num">{money(dueOf(x))}</b></span>
                       <span>المتبقي <b className="rem num">{money(remainingOf(x))}</b></span>
                     </div>
