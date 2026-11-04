@@ -173,7 +173,17 @@ tbody tr:hover .btn.more span { transform: translateX(-3px); }
 .buyform { display: flex; flex-direction: column; gap: 8px; background: var(--bg); border-radius: 12px; padding: 12px; }
 .buyform b { color: var(--forest); }
 .buyform .muted { font-size: 13px; }
-.buyform input { border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; min-height: 44px; font-size: 16px; background: #fff; }
+.buyform input { border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; min-height: 44px; font-size: 16px; background: #fff; min-width: 0; width: 100%; }
+.buy-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* fixed bottom actions (site) */
+.bottom-bar { position: fixed; inset: auto 0 0 0; z-index: 15; background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px -16px #0A302266; padding-bottom: env(safe-area-inset-bottom, 0px); }
+.bottom-bar .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-block: 10px; max-width: 720px; }
+.bottom-bar .btn { min-height: 48px; font-size: 15px; font-weight: 700; }
+body:has(.bottom-bar) { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+.notes { background: var(--bg); border-radius: 9px; padding: 8px 12px; font-size: 13px; }
+.notes summary { cursor: pointer; color: var(--forest); font-weight: 600; }
+.notes p { margin: 8px 0 0; line-height: 1.8; overflow-wrap: anywhere; color: var(--muted); }
 .buyform .form-error { margin: 0; }
 .okmsg { background: var(--teal); color: #fff; border-radius: 10px; padding: 12px 14px; font-weight: 600; text-align: center; }
 

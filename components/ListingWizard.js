@@ -121,7 +121,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
         {step === 0 && (
           <div className="grid">
-            <div className="field full"><span className="lbl">المحافظة</span><div className="fixed">{SITE.governorate}</div></div>
+            <div className="field full"><span className="lbl">المدينة</span><div className="fixed">{SITE.governorate}</div></div>
             <div className="field full"><span className="lbl">التقسيم (الجمعية)</span>
               <div className="big-choice">
                 {SITE.zones.map((z) => <button key={z} type="button" aria-pressed={d.zone === z} onClick={() => set('zone', z)}>{z}</button>)}
@@ -145,17 +145,11 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               <input id="w-ao" type="number" inputMode="decimal" min="0" value={d.area_orig} onChange={(e) => set('area_orig', e.target.value)} /></div>
             <div className="field"><label htmlFor="w-af">المساحة بعد التقنين (م²)</label>
               <input id="w-af" type="number" inputMode="decimal" min="0" value={d.area_final} onChange={(e) => set('area_final', e.target.value)} /></div>
-            <div className="field full"><span className="lbl">الحالة</span>
-              <div className="status-cards">
-                {STATUSES.map((t, i) => {
-                  const [head, ...rest] = t.split(' / ');
-                  return (
-                    <button key={t} type="button" aria-pressed={d.land_status === i + 1} onClick={() => set('land_status', i + 1)}>
-                      {head}{rest.length > 0 && <small>{rest.join(' / ')}</small>}
-                    </button>
-                  );
-                })}
-              </div></div>
+            <div className="field full"><label htmlFor="w-status">الحالة</label>
+              <select id="w-status" value={d.land_status || ''} onChange={(e) => set('land_status', Number(e.target.value) || 0)}>
+                <option value="">اختار الحالة</option>
+                {STATUSES.map((t, i) => <option key={t} value={i + 1}>{t}</option>)}
+              </select></div>
           </div>
         )}
 

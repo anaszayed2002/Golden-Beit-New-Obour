@@ -332,6 +332,12 @@ function ListingCard({ x, highlight, busy, confirming, onStatus, onEdit, onAskDe
         {x.description && (<><dt>الوصف</dt><dd className="pre">{x.description}</dd></>)}
         {Number(x.request_count) > 0 && (<><dt>طلبات عليها</dt><dd className="num">{x.request_count}</dd></>)}
       </dl>
+      {x.notes && (
+        <details className="notes">
+          <summary>ملاحظات الإدارة</summary>
+          <p className="pre">{x.notes}</p>
+        </details>
+      )}
       {confirming ? (
         <div className="confirm">
           متأكد إنك عايز تمسح {listingCode(x.id)} نهائي؟

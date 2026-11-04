@@ -3,8 +3,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   SITE, STATUSES, FACADES, VIEWS, RECEIVED_STATUS, PHONE_RE, money, listingCode, waLink, areaOf,
-  dueOf, remainingOf, payRows, statusLabel, parseCode, normalizePhone, serverError,
+  dueOf, remainingOf, hasPayment, payRows, statusLabel, parseCode, normalizePhone, serverError,
 } from '@/lib/site';
+
+// "—" instead of a misleading 0 when a listing has no paid/over amount.
+const Amount = ({ x, value, className, unit = 'ج' }) => (hasPayment(x)
+  ? <span className={className}><span className="num">{money(value)}</span><span className="cur">{unit}</span></span>
+  : <span className="muted">—</span>);
 import { useToast, useBodyLock, useEscape } from './hooks';
 import ListingWizard from './ListingWizard';
 import SheetTop from './SheetTop';
@@ -103,9 +108,6 @@ export default function Market() {
             <img src="/logo.png" alt="جولدن بيت Golden Beit" />
             <span className="sub"><b><span>Golden Beit</span> <span>New Obour</span></b></span>
           </a>
-          <button className="btn primary" onClick={() => setModal('offer')}>
-            + اعرض<span className="long">&nbsp;قطعتك</span>
-          </button>
         </div>
       </header>
 
@@ -226,8 +228,8 @@ export default function Market() {
                     <td><span className="num">{areaOf(x)}</span> م²</td>
                     <td>{x.land_status ? <span className={`pill ${x.land_status === RECEIVED_STATUS ? 'got' : 'st'}`}>{statusLabel(x.land_status)}</span> : <span className="muted">—</span>}</td>
                     <td className="price"><span className="num">{money(x.price)}</span><span className="cur">ج</span></td>
-                    <td className="paid"><span className="num">{money(dueOf(x))}</span><span className="cur">ج</span></td>
-                    <td className="rem"><span className="num">{money(remainingOf(x))}</span><span className="cur">ج</span></td>
+                    <td><Amount x={x} value={dueOf(x)} className="paid" /></td>
+                    <td><Amount x={x} value={remainingOf(x)} className="rem" /></td>
                     <td className="more-cell">
                       <button className="btn more" tabIndex={-1} onClick={(e) => { e.stopPropagation(); setSelected(x); }}>
                         تفاصيل أكثر <span aria-hidden="true">←</span>
@@ -248,10 +250,12 @@ export default function Market() {
                   </div>
                   <div className="l2">{[x.district, x.neighborhood, statusLabel(x.land_status)].filter(Boolean).join(' · ')}</div>
                   <div className="l3"><b className="num">{money(x.price)}</b><span className="cur">جنيه</span></div>
-                  <div className="l4">
-                    <span>المطلوب دفعه <b className="paid num">{money(dueOf(x))}</b></span>
-                    <span>المتبقي <b className="rem num">{money(remainingOf(x))}</b></span>
-                  </div>
+                  {hasPayment(x) && (
+                    <div className="l4">
+                      <span>المطلوب دفعه <b className="paid num">{money(dueOf(x))}</b></span>
+                      <span>المتبقي <b className="rem num">{money(remainingOf(x))}</b></span>
+                    </div>
+                  )}
                   <span className="btn more block" aria-hidden="true">تفاصيل أكثر <span>←</span></span>
                 </button>
               ))}
@@ -261,6 +265,15 @@ export default function Market() {
       </main>
 
       <Footer />
+
+      <nav className="bottom-bar" aria-label="أزرار سريعة">
+        <div className="wrap">
+          <button className="btn primary" onClick={() => setModal('offer')}>+ اعرض قطعتك</button>
+          <a className="btn wa" href={waLink('السلام عليكم، عايز أستفسر عن أراضي القادسية والأمل.')} target="_blank" rel="noopener noreferrer">
+            <WhatsAppIcon /> تواصل واتساب
+          </a>
+        </div>
+      </nav>
 
       {selected && (
         <>
@@ -293,7 +306,6 @@ export default function Market() {
 }
 
 function Drawer({ item: x, zone, onClose }) {
-  const [buying, setBuying] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
@@ -321,8 +333,10 @@ function Drawer({ item: x, zone, onClose }) {
         <SheetTop title={<>قطعة في {x.zone} <span className="code num">{listingCode(x.id)}</span></>} onClose={onClose} />
         <div className="money">
           <div className="big"><label>السعر الكلي</label><strong><span className="num">{money(x.price)}</span> ج</strong></div>
-          <div><label>المطلوب دفعه</label><strong><span className="num">{money(dueOf(x))}</span> ج</strong></div>
-          <div><label>المتبقي</label><strong><span className="num">{money(remainingOf(x))}</span> ج</strong></div>
+          {hasPayment(x) && (<>
+            <div><label>المطلوب دفعه</label><strong><span className="num">{money(dueOf(x))}</span> ج</strong></div>
+            <div><label>المتبقي</label><strong><span className="num">{money(remainingOf(x))}</span> ج</strong></div>
+          </>)}
         </div>
         <div className="sec-title">بيانات القطعة</div>
         <dl className="kv">
@@ -345,23 +359,21 @@ function Drawer({ item: x, zone, onClose }) {
       </div>
       <div className="cta">
         {sent ? (
-          <div className="okmsg" role="status">طلبك للقطعة {listingCode(x.id)} وصل. هنكلمك قريب.</div>
-        ) : buying ? (
-          <form className="buyform" onSubmit={buy} noValidate>
-            <b>اطلب القطعة {listingCode(x.id)}</b>
-            <span className="muted">اكتب اسمك ورقمك وهنكلمك.</span>
-            <input aria-label="الاسم" placeholder="الاسم" autoComplete="name" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-            <input aria-label="رقم التليفون" className="num" type="tel" inputMode="tel" placeholder="01xxxxxxxxx" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            {error && <p className="form-error" role="alert">{error}</p>}
-            <button className="btn primary block" type="submit" disabled={busy}>{busy ? 'بيتبعت...' : 'ابعت الطلب'}</button>
-            <button className="btn block" type="button" onClick={() => { setBuying(false); setError(''); }}>رجوع</button>
-          </form>
+          <div className="okmsg" role="status">طلب الشراء للقطعة {listingCode(x.id)} وصل. هنكلمك قريب.</div>
         ) : (
-          <>
-            <a className="btn wa block" href={waLink(msg)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon /> تواصل واتساب</a>
-            <button className="btn primary block" onClick={() => setBuying(true)}>اطلب القطعة</button>
-          </>
+          <form className="buyform" onSubmit={buy} noValidate>
+            <b>طلب شراء القطعة {listingCode(x.id)}</b>
+            <div className="buy-fields">
+              <input aria-label="الاسم" placeholder="اسمك" autoComplete="name" maxLength={80} required
+                value={name} onChange={(e) => setName(e.target.value)} />
+              <input aria-label="رقم التليفون" className="num" type="tel" inputMode="tel" placeholder="رقم التليفون 01xxxxxxxxx" autoComplete="tel" required
+                value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            {error && <p className="form-error" role="alert">{error}</p>}
+            <button className="btn primary block" type="submit" disabled={busy}>{busy ? 'بيتبعت...' : 'ارسل طلب الشراء'}</button>
+          </form>
         )}
+        <a className="btn wa block" href={waLink(msg)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon /> تواصل واتساب</a>
       </div>
     </aside>
   );
