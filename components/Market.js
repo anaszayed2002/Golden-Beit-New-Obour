@@ -381,7 +381,7 @@ function Drawer({ item: x, zone, onClose }) {
             <div className="buy-fields">
               <input aria-label="الاسم" placeholder="اسمك" autoComplete="name" maxLength={80} required
                 value={name} onChange={(e) => setName(e.target.value)} />
-              <input aria-label="رقم التليفون" className="num" type="tel" inputMode="tel" placeholder="رقم التليفون 01xxxxxxxxx" autoComplete="tel" required
+              <input aria-label="رقم التليفون" className="num" type="tel" inputMode="tel" placeholder="رقم التليفون" autoComplete="tel" required
                 value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             {error && <p className="form-error" role="alert">{error}</p>}
