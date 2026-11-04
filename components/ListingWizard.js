@@ -1,8 +1,8 @@
 'use client';
 import { useRef, useState } from 'react';
 import {
-  SITE, STATUSES, FACADES, VIEWS, PAY_ITEMS, PHONE_RE, money, listingCode,
-  dueOf, remainingOf, installmentsTotal, normalizePhone, toEnglishDigits, statusLabel,
+  SITE, STATUSES, FACADES, VIEWS, PAY_ITEMS, PHONE_RE, RECEIVED_STATUS, WAIVER_PER_M, DISTRICTS, NEIGHBORHOODS,
+  money, listingCode, installmentsTotal, instLeftTotal, instPaidTotal, normalizePhone, toEnglishDigits, statusLabel,
 } from '@/lib/site';
 import SheetTop from './SheetTop';
 
@@ -17,13 +17,15 @@ const blank = () => ({
 
 function fromListing(x) {
   const pay = { inst: {}, ...(x.pay || {}) };
+  // Imported listings only have a total price: keep it by treating the part not yet paid as الأوفر.
+  const legacyOver = !Number(x.over_amount) ? Math.max(0, Number(x.price || 0) - Number(x.paid || 0)) : 0;
   return {
     ...blank(),
     zone: x.zone || '', district: x.district || '', neighborhood: x.neighborhood || '',
     block: x.block || '', plot_number: x.plot_number || '',
     area_orig: x.area_orig ?? x.area ?? '', area_final: x.area_final ?? x.area ?? '',
     land_status: x.land_status || 0, facade: x.facade || '', view_type: x.view_type || '',
-    price: x.price ?? '', paid: x.paid ?? '', over_amount: x.over_amount || '',
+    price: x.price ?? '', paid: x.paid ?? '', over_amount: x.over_amount || legacyOver || '',
     pay, payOn: { check: !!pay.check, completion: !!pay.completion, inst: !!x.pay?.inst, waiver: !!pay.waiver },
     description: x.description || '', owner_name: x.owner_name || '', contact_phone: x.contact_phone || '',
   };
@@ -31,20 +33,42 @@ function fromListing(x) {
 
 const num = (v) => (v === '' || v == null ? '' : Number(toEnglishDigits(v)));
 
+// Everything the payment step calculates by itself.
+function compute(d) {
+  const i = d.pay.inst || {};
+  const inst = d.payOn.inst ? {
+    value: num(i.value) || 0, count: num(i.count) || 0,
+    left_count: i.left_count === '' || i.left_count == null ? '' : num(i.left_count),
+  } : null;
+  const check = d.payOn.check ? num(d.pay.check) || 0 : 0;
+  const completion = d.payOn.completion ? num(d.pay.completion) || 0 : 0;
+  const instPaid = inst ? instPaidTotal(inst) : 0;
+  const paid = check + completion + instPaid;
+  const over = num(d.over_amount) || 0;
+  const area = num(d.area_final) || num(d.area_orig) || 0;
+  return {
+    inst, check, completion, instPaid, paid, over, price: paid + over,
+    instTotal: inst ? installmentsTotal(inst) : 0, instLeft: inst ? instLeftTotal(inst) : 0,
+    waiver: d.payOn.waiver ? Math.round(area * WAIVER_PER_M) : 0,
+    received: d.land_status === RECEIVED_STATUS,
+  };
+}
+
 function toPayload(d) {
-  const pay = {};
-  if (d.payOn.check && d.pay.check) pay.check = num(d.pay.check);
-  if (d.payOn.completion && d.pay.completion) pay.completion = num(d.pay.completion);
-  if (d.payOn.waiver && d.pay.waiver) pay.waiver = num(d.pay.waiver);
-  if (d.payOn.inst) {
+  const c = compute(d), pay = {};
+  if (c.check) pay.check = c.check;
+  if (c.completion) pay.completion = c.completion;
+  if (c.waiver) pay.waiver = c.waiver;
+  if (c.inst) {
     const i = d.pay.inst || {};
-    pay.inst = { value: num(i.value), count: num(i.count), left: num(i.left), first: i.first || '', last: i.last || '' };
+    pay.inst = { value: c.inst.value, count: c.inst.count, left_count: c.inst.left_count, left: c.instLeft,
+      first: c.received ? i.first || '' : '', last: c.received ? i.last || '' : '' };
   }
   return {
     zone: d.zone, district: d.district.trim(), neighborhood: d.neighborhood.trim(), block: d.block.trim(),
     plot_number: d.plot_number.trim(), area_orig: num(d.area_orig), area_final: num(d.area_final),
     land_status: d.land_status, facade: d.facade, view_type: d.view_type,
-    price: num(d.price), paid: num(d.paid) || 0, over_amount: num(d.over_amount) || 0, pay,
+    price: c.price, paid: c.paid, over_amount: c.over, pay,
     description: d.description.trim(), owner_name: d.owner_name.trim(), contact_phone: normalizePhone(d.contact_phone),
   };
 }
@@ -53,8 +77,11 @@ function validate(step, d) {
   if (step === 0 && !d.zone) return 'اختار التقسيم: القادسية ولا الأمل.';
   if (step === 1 && !(num(d.area_final) > 0 || num(d.area_orig) > 0)) return 'اكتب المساحة.';
   if (step === 1 && !d.land_status) return 'اختار حالة القطعة.';
-  if (step === 3 && !(num(d.price) > 0)) return 'اكتب السعر الكلي.';
-  if (step === 3 && num(d.paid) > num(d.price)) return 'المدفوع أكبر من السعر الكلي. راجع الأرقام.';
+  if (step === 3) {
+    const c = compute(d);
+    if (c.inst && c.inst.left_count !== '' && c.inst.left_count > c.inst.count) return 'عدد الأقساط المتبقية أكبر من عدد الأقساط.';
+    if (!(c.price > 0)) return 'اكتب الأوفر أو اختار البنود المدفوعة، علشان السعر الكلي يتحسب.';
+  }
   if (step === 4 && d.owner_name.trim().length < 2) return 'اكتب الاسم.';
   if (step === 4 && !PHONE_RE.test(normalizePhone(d.contact_phone))) return 'اكتب رقم موبايل مصري صح، زي 01012345678.';
   return '';
@@ -70,6 +97,16 @@ function Chips({ options, value, onPick }) {
   );
 }
 
+function Auto({ label, value, empty, note }) {
+  return (
+    <div className="field">
+      <span className="lbl">{label} <small className="auto-tag">(يحدد تلقائيا)</small></span>
+      <div className={`autobox${value ? '' : ' empty'}`}>{value ? <><span className="num">{money(value)}</span> ج</> : empty || '0 ج'}</div>
+      {note && <span className="hint">{note}</span>}
+    </div>
+  );
+}
+
 function Money({ id, label, value, onChange }) {
   return (
     <div className="field">
@@ -81,7 +118,7 @@ function Money({ id, label, value, onChange }) {
 }
 
 // mode: 'public' (visitor offer) | 'admin' (add or edit). onSubmit(payload) resolves to an error message or ''.
-export default function ListingWizard({ mode = 'public', initial, editId, onClose, onSubmit, suggestions = {} }) {
+export default function ListingWizard({ mode = 'public', initial, editId, onClose, onSubmit }) {
   const admin = mode === 'admin';
   const [d, setD] = useState(() => (initial ? fromListing(initial) : blank()));
   const [step, setStep] = useState(0);
@@ -95,7 +132,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
   const togglePay = (k) => setD((s) => ({ ...s, payOn: { ...s.payOn, [k]: !s.payOn[k] } }));
   const go = (n) => { setError(''); setStep(n); sheet.current?.scrollTo({ top: 0 }); };
 
-  const totals = { price: num(d.price) || 0, paid: num(d.paid) || 0, over_amount: num(d.over_amount) || 0 };
+  const c = compute(d);
   const title = admin ? (editId ? `تعديل ${listingCode(editId)}` : 'إضافة إعلان') : 'اعرض قطعتك';
   const last = step === STEP_NAMES.length - 1;
 
@@ -127,15 +164,19 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                 {SITE.zones.map((z) => <button key={z} type="button" aria-pressed={d.zone === z} onClick={() => set('zone', z)}>{z}</button>)}
               </div></div>
             <div className="field"><label htmlFor="w-dist">الحي</label>
-              <input id="w-dist" list="dl-dist" maxLength={40} placeholder="مثلاً الحي الأول" value={d.district} onChange={(e) => set('district', e.target.value)} /></div>
+              <select id="w-dist" value={d.district} onChange={(e) => set('district', e.target.value)}>
+                <option value="">اختياري</option>
+                {(DISTRICTS.includes(d.district) || !d.district ? DISTRICTS : [d.district, ...DISTRICTS]).map((v) => <option key={v}>{v}</option>)}
+              </select></div>
             <div className="field"><label htmlFor="w-nb">المجاورة</label>
-              <input id="w-nb" list="dl-nb" maxLength={40} placeholder="مثلاً المجاورة 3" value={d.neighborhood} onChange={(e) => set('neighborhood', e.target.value)} /></div>
+              <select id="w-nb" value={d.neighborhood} onChange={(e) => set('neighborhood', e.target.value)}>
+                <option value="">اختياري</option>
+                {(NEIGHBORHOODS.includes(d.neighborhood) || !d.neighborhood ? NEIGHBORHOODS : [d.neighborhood, ...NEIGHBORHOODS]).map((v) => <option key={v}>{v}</option>)}
+              </select></div>
             <div className="field"><label htmlFor="w-block">البلوك</label>
               <input id="w-block" maxLength={40} value={d.block} onChange={(e) => set('block', e.target.value)} /></div>
             <div className="field"><label htmlFor="w-plot">رقم القطعة (لو موجود)</label>
               <input id="w-plot" maxLength={40} placeholder="سيبه فاضي لو لسه متخصصتش" value={d.plot_number} onChange={(e) => set('plot_number', e.target.value)} /></div>
-            <datalist id="dl-dist">{(suggestions.districts || []).map((v) => <option key={v} value={v} />)}</datalist>
-            <datalist id="dl-nb">{(suggestions.neighborhoods || []).map((v) => <option key={v} value={v} />)}</datalist>
           </div>
         )}
 
@@ -162,14 +203,11 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
         {step === 3 && (
           <div className="grid">
-            <div className="full"><Money id="w-price" label="السعر الكلي (جنيه)" value={d.price} onChange={(v) => set('price', v)} /></div>
-            <Money id="w-paid" label="المدفوع (جنيه)" value={d.paid} onChange={(v) => set('paid', v)} />
-            <Money id="w-over" label="الأوفر المطلوب (جنيه)" value={d.over_amount} onChange={(v) => set('over_amount', v)} />
-            <div className="full calc">
-              <div><label>المطلوب دفعه</label><strong className="num">{money(dueOf(totals))} ج</strong></div>
-              <div><label>المتبقي</label><strong className="num">{money(remainingOf(totals))} ج</strong></div>
-            </div>
-            <div className="field full"><span className="lbl">بنود الدفع (اختار اللي يخصك)</span>
+            <Auto label="السعر الكلي" value={c.price} note="المدفوع + الأوفر" />
+            <Auto label="المدفوع (المبلغ الذي دفعته فعليا)" value={c.paid} empty="فضلا اختر البنود المدفوعة بالأسفل"
+              note="شيك التقنين + دفعة الاستكمال + الأقساط المدفوعة" />
+            <div className="full"><Money id="w-over" label="الأوفر المطلوب (جنيه)" value={d.over_amount} onChange={(v) => set('over_amount', v)} /></div>
+            <div className="field full"><span className="lbl">البنود المدفوعة (اختار اللي يخصك)</span>
               <div className="chips toggle">
                 {PAY_ITEMS.map(([k, t]) => <button key={k} type="button" aria-pressed={!!d.payOn[k]} onClick={() => togglePay(k)}>{t}</button>)}
               </div></div>
@@ -182,16 +220,28 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                   <Money id="w-iv" label="قيمة القسط" value={d.pay.inst?.value ?? ''} onChange={(v) => setInst('value', v)} />
                   <div className="field"><label htmlFor="w-ic">عدد الأقساط</label>
                     <input id="w-ic" type="number" inputMode="numeric" min="0" value={d.pay.inst?.count ?? ''} onChange={(e) => setInst('count', e.target.value)} /></div>
-                  <div className="full calc one"><div><label>إجمالي الأقساط</label><strong className="num">{money(installmentsTotal({ value: num(d.pay.inst?.value), count: num(d.pay.inst?.count) }))} ج</strong></div></div>
-                  <div className="full"><Money id="w-il" label="إجمالي الأقساط المتبقية" value={d.pay.inst?.left ?? ''} onChange={(v) => setInst('left', v)} /></div>
+                  <Auto label="إجمالي الأقساط" value={c.instTotal} note="قيمة القسط × عدد الأقساط" />
+                  <div className="field"><label htmlFor="w-ilc">عدد الأقساط المتبقية</label>
+                    <input id="w-ilc" type="number" inputMode="numeric" min="0" value={d.pay.inst?.left_count ?? ''} onChange={(e) => setInst('left_count', e.target.value)} /></div>
+                  <Auto label="إجمالي الأقساط المتبقية" value={c.instLeft} note="قيمة القسط × عدد الأقساط المتبقية" />
+                  <Auto label="الأقساط المدفوعة" value={c.instPaid} note="بتدخل في المدفوع" />
                   <div className="field"><label htmlFor="w-if">موعد أول قسط</label>
-                    <input id="w-if" type="month" value={d.pay.inst?.first || ''} onChange={(e) => setInst('first', e.target.value)} /></div>
+                    {c.received
+                      ? <input id="w-if" type="month" value={d.pay.inst?.first || ''} onChange={(e) => setInst('first', e.target.value)} />
+                      : <input id="w-if" disabled placeholder="يحدد بعد الاستلام" />}</div>
                   <div className="field"><label htmlFor="w-il2">موعد آخر قسط</label>
-                    <input id="w-il2" type="month" value={d.pay.inst?.last || ''} onChange={(e) => setInst('last', e.target.value)} /></div>
+                    {c.received
+                      ? <input id="w-il2" type="month" value={d.pay.inst?.last || ''} onChange={(e) => setInst('last', e.target.value)} />
+                      : <input id="w-il2" disabled placeholder="يحدد بعد الاستلام" />}</div>
                 </div>
               </div>
             )}
-            {d.payOn.waiver && <div className="full paybox"><Money id="w-wv" label="قيمة التنازل (جنيه)" value={d.pay.waiver ?? ''} onChange={(v) => setPay('waiver', v)} /></div>}
+            {d.payOn.waiver && <div className="full paybox"><Auto label="قيمة التنازل" value={c.waiver}
+              note={`${WAIVER_PER_M} ج × المساحة بعد التقنين`} empty="اكتب المساحة في الخطوة التانية" /></div>}
+            <div className="full calc">
+              <div><label>السعر الكلي</label><strong className="num">{money(c.price)} ج</strong></div>
+              <div><label>المتبقي (أقساط)</label><strong className="num">{money(c.instLeft)} ج</strong></div>
+            </div>
           </div>
         )}
 
@@ -209,9 +259,10 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                 <dt>المكان</dt><dd>{[SITE.governorate, d.zone, d.district, d.neighborhood].filter(Boolean).join(' · ')}</dd>
                 <dt>المساحة</dt><dd><span className="num">{d.area_final || d.area_orig}</span> م²</dd>
                 <dt>الحالة</dt><dd>{statusLabel(d.land_status)}</dd>
-                <dt>السعر الكلي</dt><dd className="num">{money(num(d.price))} ج</dd>
-                <dt>المطلوب دفعه</dt><dd className="num">{money(dueOf(totals))} ج</dd>
-                <dt>المتبقي</dt><dd className="num">{money(remainingOf(totals))} ج</dd>
+                <dt>السعر الكلي</dt><dd className="num">{money(c.price)} ج</dd>
+                <dt>المدفوع</dt><dd className="num">{money(c.paid)} ج</dd>
+                <dt>الأوفر</dt><dd className="num">{money(c.over)} ج</dd>
+                {c.instLeft > 0 && (<><dt>المتبقي (أقساط)</dt><dd className="num">{money(c.instLeft)} ج</dd></>)}
               </dl></div>
           </div>
         )}

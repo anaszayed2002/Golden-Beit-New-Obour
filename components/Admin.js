@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
-  SITE, money, listingCode, userInfo, areaOf, dueOf, remainingOf, payRows, statusLabel,
+  SITE, money, listingCode, userInfo, areaOf, remainingOf, payRows, statusLabel,
   parseCode, normalizePhone, toEnglishDigits, waTo, serverError,
 } from '@/lib/site';
 import { useSession, useToast, useBodyLock } from './hooks';
@@ -20,7 +20,6 @@ const TABS = [
 const STATUS = { pending: 'مستني موافقة', approved: 'منشور', rejected: 'مرفوض', sold: 'اتباعت' };
 const tabOf = (x) => (x.status === 'pending' ? 'pending' : x.status === 'approved' ? 'approved' : 'closed');
 const fmtDate = (d) => new Date(d).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
-const uniq = (list) => [...new Set(list.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ar', { numeric: true }));
 
 function Phone({ value }) {
   if (!value) return <span className="muted">—</span>;
@@ -291,8 +290,7 @@ export default function Admin() {
 
       {wizard && (
         <ListingWizard mode="admin" initial={wizard.listing} editId={wizard.listing?.id}
-          onClose={() => setWizard(null)} onSubmit={saveListing}
-          suggestions={{ districts: uniq(listings.map((x) => x.district)), neighborhoods: uniq(listings.map((x) => x.neighborhood)) }} />
+          onClose={() => setWizard(null)} onSubmit={saveListing} />
       )}
       {toast && <div className="toast" role="status">{toast}</div>}
     </>
@@ -317,8 +315,8 @@ function ListingCard({ x, highlight, busy, confirming, onStatus, onEdit, onAskDe
       <div className="amoney">
         <div><label>السعر الكلي</label><strong className="num">{money(x.price)}</strong></div>
         <div><label>المدفوع</label><strong className="num paid">{money(x.paid)}</strong></div>
-        <div><label>المطلوب دفعه</label><strong className="num">{money(dueOf(x))}</strong></div>
-        <div><label>المتبقي</label><strong className="num rem">{money(remainingOf(x))}</strong></div>
+        <div><label>الأوفر</label><strong className="num">{money(x.over_amount)}</strong></div>
+        <div><label>المتبقي (أقساط)</label><strong className="num rem">{money(remainingOf(x))}</strong></div>
       </div>
       <dl className="akv">
         <dt>المساحة</dt><dd>

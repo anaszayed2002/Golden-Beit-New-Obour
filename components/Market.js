@@ -3,8 +3,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   SITE, STATUSES, FACADES, VIEWS, RECEIVED_STATUS, PHONE_RE, money, listingCode, waLink, areaOf,
-  dueOf, remainingOf, hasPayment, payRows, statusLabel, parseCode, normalizePhone, serverError,
+  remainingOf, hasPayment, payRows, statusLabel, parseCode, normalizePhone, serverError, toEnglishDigits,
+  DISTRICTS, NEIGHBORHOODS, instValueOf, instCountOf, instLeftCountOf,
 } from '@/lib/site';
+import StopRange from './StopRange';
 
 // "—" instead of a misleading 0 when a listing has no paid/over amount.
 const Amount = ({ x, value, className, unit = 'ج' }) => (hasPayment(x)
@@ -17,16 +19,34 @@ import Footer from './Footer';
 import { WhatsAppIcon } from './icons';
 
 const LISTING_COLUMNS = 'id,zone,area,district,neighborhood,area_orig,area_final,land_status,facade,view_type,price,paid,over_amount,pay,description,created_at';
-const EMPTY = { zone: '', district: '', neighborhood: '', status: '', facade: '', view: '', pmin: '', pmax: '', amin: '', amax: '', due: '', rem: '', inst: false, received: false };
-const SORTS = {
-  '': (a, b) => new Date(b.created_at) - new Date(a.created_at),
-  'price:1': (a, b) => a.price - b.price,
-  'price:-1': (a, b) => b.price - a.price,
-  'due:1': (a, b) => dueOf(a) - dueOf(b),
-  'area:-1': (a, b) => areaOf(b) - areaOf(a),
+const EMPTY = {
+  zone: '', district: '', neighborhood: '', status: '', facade: '', view: '',
+  pmin: '', pmax: '', amin: '', amax: '', paid: '', over: '', rem: '', ival: '', ileft: '',
+  inst: false, received: false, check: false, completion: false,
+};
+const AREA_STOPS = [209, 276, 300, 350, 400, 450, 500, Infinity];
+const AREA_LABELS = ['209', '276', '300', '350', '400', '450', '500', '+500'];
+const PRICE_STOPS = [0, ...Array.from({ length: 11 }, (_, i) => 1000000 + i * 500000), Infinity];
+const PRICE_LABELS = PRICE_STOPS.map((v, i) => (v === 0 ? '0' : v === Infinity ? '+6 مليون' : i % 2 && i < 11 ? `${v / 1e6} مليون` : ''));
+
+// Every sort works both ways: [key, label, value-of].
+const SORT_FIELDS = [
+  ['date', 'تاريخ النشر', (x) => new Date(x.created_at).getTime()],
+  ['price', 'السعر الكلي', (x) => x.price],
+  ['area', 'المساحة', (x) => areaOf(x)],
+  ['paid', 'المدفوع', (x) => x.paid],
+  ['over', 'الأوفر', (x) => x.over_amount],
+  ['rem', 'المتبقي (أقساط)', (x) => remainingOf(x)],
+  ['ival', 'قيمة القسط', (x) => instValueOf(x)],
+  ['ileft', 'عدد الأقساط المتبقية', (x) => instLeftCountOf(x) ?? instCountOf(x)],
+  ['code', 'كود الوحدة', (x) => x.id],
+];
+const sorter = (key) => {
+  const [field, dir] = (key || 'date:-1').split(':');
+  const f = (SORT_FIELDS.find(([k]) => k === field) || SORT_FIELDS[0])[2];
+  return (a, b) => (f(a) - f(b)) * Number(dir || -1);
 };
 
-const uniq = (list) => [...new Set(list.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ar', { numeric: true }));
 const activeCount = (f) => Object.values(f).filter((v) => v !== '' && v !== false).length;
 
 function applyFilters(list, f) {
@@ -36,8 +56,11 @@ function applyFilters(list, f) {
     (!f.status || x.land_status === Number(f.status)) && (!f.facade || x.facade === f.facade) && (!f.view || x.view_type === f.view) &&
     x.price >= n(f.pmin, 0) && x.price <= n(f.pmax, Infinity) &&
     areaOf(x) >= n(f.amin, 0) && areaOf(x) <= n(f.amax, Infinity) &&
-    dueOf(x) <= n(f.due, Infinity) && remainingOf(x) <= n(f.rem, Infinity) &&
-    (!f.inst || !!x.pay?.inst) && (!f.received || x.land_status === RECEIVED_STATUS));
+    x.paid <= n(f.paid, Infinity) && x.over_amount <= n(f.over, Infinity) && remainingOf(x) <= n(f.rem, Infinity) &&
+    (f.ival === '' || (instValueOf(x) > 0 && instValueOf(x) <= Number(f.ival))) &&
+    (f.ileft === '' || (instLeftCountOf(x) ?? instCountOf(x)) <= Number(f.ileft)) &&
+    (!f.inst || !!x.pay?.inst) && (!f.received || x.land_status === RECEIVED_STATUS) &&
+    (!f.check || !!x.pay?.check) && (!f.completion || !!x.pay?.completion));
 }
 
 export default function Market() {
@@ -45,7 +68,7 @@ export default function Market() {
   const [zones, setZones] = useState({});
   const [loadError, setLoadError] = useState(false);
   const [filters, setFilters] = useState(EMPTY);
-  const [sort, setSort] = useState('');
+  const [sort, setSort] = useState('date:-1');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [modal, setModal] = useState(null); // 'offer' | {type:'sent', id}
@@ -66,15 +89,11 @@ export default function Market() {
   useEffect(() => { load(); }, [load]);
 
   const all = listings || [];
-  const visible = useMemo(() => applyFilters(all, filters).sort(SORTS[sort]), [all, filters, sort]);
-  const scoped = filters.zone ? all.filter((x) => x.zone === filters.zone) : all;
-  const districts = uniq(scoped.map((x) => x.district));
-  const neighborhoods = uniq(scoped.filter((x) => !filters.district || x.district === filters.district).map((x) => x.neighborhood));
+  const visible = useMemo(() => applyFilters(all, filters).sort(sorter(sort)), [all, filters, sort]);
   const nActive = activeCount(filters);
+  const setRange = (a, b) => (lo, hi) => setFilters((f) => ({ ...f, [a]: lo, [b]: hi }));
   const set = (k, v) => setFilters((f) => {
     const next = { ...f, [k]: v };
-    if (k === 'zone') { next.district = ''; next.neighborhood = ''; }
-    if (k === 'district') next.neighborhood = '';
     return next;
   });
 
@@ -125,17 +144,20 @@ export default function Market() {
 
       <main className="wrap market">
         <div className="stats">
-          <button className="stat" aria-pressed={nActive === 0} onClick={() => setFilters(EMPTY)}>
-            <span>قطع معروضة</span><strong className="num">{all.length}</strong>
+          <button className="stat-main" aria-pressed={!filters.zone && nActive === 0} onClick={() => setFilters(EMPTY)}>
+            <span>القطع المعروضة</span><strong className="num">{all.length}</strong>
+            <span className="split" aria-hidden="true">
+              {SITE.zones.map((z) => <i key={z} style={{ flexGrow: all.filter((x) => x.zone === z).length || 0.0001 }} />)}
+            </span>
           </button>
-          <button className="stat" aria-pressed={filters.received} onClick={() => set('received', !filters.received)}>
-            <span>مستلمة</span><strong className="num">{all.filter((x) => x.land_status === RECEIVED_STATUS).length}</strong>
-          </button>
-          {SITE.zones.map((z) => (
-            <button key={z} className="stat" aria-pressed={filters.zone === z} onClick={() => set('zone', filters.zone === z ? '' : z)}>
-              <span>في {z}</span><strong className="num">{all.filter((x) => x.zone === z).length}</strong>
-            </button>
-          ))}
+          <div className="stat-kids">
+            {SITE.zones.map((z) => (
+              <button key={z} className="stat-kid" aria-pressed={filters.zone === z} onClick={() => set('zone', filters.zone === z ? '' : z)}>
+                <span>{z}</span><strong className="num">{all.filter((x) => x.zone === z).length}</strong>
+                <small className="num">{all.length ? Math.round((all.filter((x) => x.zone === z).length / all.length) * 100) : 0}%</small>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="toolbar">
@@ -144,11 +166,10 @@ export default function Market() {
             الفلتر {nActive > 0 && <span className="fcount num">{nActive}</span>}
           </button>
           <select className="sortsel" aria-label="ترتيب" value={sort} onChange={(e) => setSort(e.target.value)}>
-            <option value="">الأحدث</option>
-            <option value="price:1">السعر الكلي: الأقل الأول</option>
-            <option value="price:-1">السعر الكلي: الأعلى الأول</option>
-            <option value="due:1">المطلوب دفعه: الأقل الأول</option>
-            <option value="area:-1">المساحة: الأكبر الأول</option>
+            {SORT_FIELDS.map(([k, t]) => [
+              <option key={k + '-1'} value={`${k}:-1`}>{k === 'date' ? 'الأحدث الأول' : k === 'code' ? 'كود الوحدة: الأكبر الأول' : `${t}: تنازلي`}</option>,
+              <option key={k + '1'} value={`${k}:1`}>{k === 'date' ? 'الأقدم الأول' : k === 'code' ? 'كود الوحدة: الأصغر الأول' : `${t}: تصاعدي`}</option>,
+            ])}
           </select>
         </div>
 
@@ -161,11 +182,11 @@ export default function Market() {
             </select></div>
           <div className="f"><label htmlFor="f-dist">الحي</label>
             <select id="f-dist" value={filters.district} onChange={(e) => set('district', e.target.value)}>
-              <option value="">الكل</option>{districts.map((v) => <option key={v}>{v}</option>)}
+              <option value="">الكل</option>{DISTRICTS.map((v) => <option key={v}>{v}</option>)}
             </select></div>
           <div className="f"><label htmlFor="f-nb">المجاورة</label>
             <select id="f-nb" value={filters.neighborhood} onChange={(e) => set('neighborhood', e.target.value)}>
-              <option value="">الكل</option>{neighborhoods.map((v) => <option key={v}>{v}</option>)}
+              <option value="">الكل</option>{NEIGHBORHOODS.map((v) => <option key={v}>{v}</option>)}
             </select></div>
           <div className="f w2"><label htmlFor="f-status">الحالة</label>
             <select id="f-status" value={filters.status} onChange={(e) => set('status', e.target.value)}>
@@ -179,22 +200,22 @@ export default function Market() {
             <select id="f-view" value={filters.view} onChange={(e) => set('view', e.target.value)}>
               <option value="">الكل</option>{VIEWS.map((v) => <option key={v}>{v}</option>)}
             </select></div>
-          <div className="f w2"><label>السعر الكلي (جنيه)</label>
-            <div className="pair">
-              <input type="number" inputMode="numeric" placeholder="من" aria-label="السعر من" value={filters.pmin} onChange={(e) => set('pmin', e.target.value)} />
-              <input type="number" inputMode="numeric" placeholder="إلى" aria-label="السعر إلى" value={filters.pmax} onChange={(e) => set('pmax', e.target.value)} />
-            </div></div>
-          <div className="f w2"><label>المساحة بعد التقنين (م²)</label>
-            <div className="pair">
-              <input type="number" inputMode="numeric" placeholder="من" aria-label="المساحة من" value={filters.amin} onChange={(e) => set('amin', e.target.value)} />
-              <input type="number" inputMode="numeric" placeholder="إلى" aria-label="المساحة إلى" value={filters.amax} onChange={(e) => set('amax', e.target.value)} />
-            </div></div>
-          <div className="f"><label htmlFor="f-due">المطلوب دفعه لحد</label>
-            <input id="f-due" type="number" inputMode="numeric" placeholder="أقصى مبلغ" value={filters.due} onChange={(e) => set('due', e.target.value)} /></div>
-          <div className="f"><label htmlFor="f-rem">المتبقي لحد</label>
-            <input id="f-rem" type="number" inputMode="numeric" placeholder="أقصى مبلغ" value={filters.rem} onChange={(e) => set('rem', e.target.value)} /></div>
-          <label className="chk"><input type="checkbox" checked={filters.inst} onChange={(e) => set('inst', e.target.checked)} /> بالتقسيط</label>
-          <label className="chk"><input type="checkbox" checked={filters.received} onChange={(e) => set('received', e.target.checked)} /> مستلمة</label>
+          <StopRange id="f-area" label="المساحة بعد التقنين (م²)" unit="م²" stops={AREA_STOPS} labels={AREA_LABELS}
+            min={filters.amin} max={filters.amax} onChange={setRange('amin', 'amax')} />
+          <StopRange id="f-price" label="السعر الكلي (جنيه)" unit="ج" stops={PRICE_STOPS} labels={PRICE_LABELS}
+            min={filters.pmin} max={filters.pmax} onChange={setRange('pmin', 'pmax')} />
+          {[['paid', 'المدفوع لحد', 'أقصى مبلغ'], ['over', 'الأوفر لحد', 'أقصى مبلغ'], ['rem', 'المتبقي (أقساط) لحد', 'أقصى مبلغ'],
+            ['ival', 'قيمة القسط لحد', 'أقصى قسط'], ['ileft', 'عدد الأقساط المتبقية لحد', 'أقصى عدد']].map(([k, t, ph]) => (
+            <div className="f" key={k}><label htmlFor={`f-${k}`}>{t}</label>
+              <input id={`f-${k}`} type="text" inputMode="numeric" placeholder={ph}
+                value={filters[k] === '' ? '' : money(filters[k])} onChange={(e) => set(k, toEnglishDigits(e.target.value).replace(/[^\d]/g, ''))} /></div>
+          ))}
+          <div className="f w2 chks">
+            <label className="chk"><input type="checkbox" checked={filters.inst} onChange={(e) => set('inst', e.target.checked)} /> بالتقسيط</label>
+            <label className="chk"><input type="checkbox" checked={filters.received} onChange={(e) => set('received', e.target.checked)} /> مستلمة</label>
+            <label className="chk"><input type="checkbox" checked={filters.check} onChange={(e) => set('check', e.target.checked)} /> مدفوع شيك التقنين</label>
+            <label className="chk"><input type="checkbox" checked={filters.completion} onChange={(e) => set('completion', e.target.checked)} /> مدفوع الاستكمال</label>
+          </div>
           <div className="factions">
             <button className="btn" onClick={() => setFilters(EMPTY)}>مسح الفلتر</button>
             <button className="btn primary apply" onClick={() => setFiltersOpen(false)}>اعرض النتايج</button>
@@ -214,7 +235,7 @@ export default function Market() {
           <>
             <div className="tablebox listings"><table>
               <thead><tr>
-                <th>الكود</th><th>المكان</th><th>المساحة</th><th>الحالة</th><th>السعر الكلي</th><th>المطلوب دفعه</th><th>المتبقي</th>
+                <th>الكود</th><th>المكان</th><th>المساحة</th><th>الحالة</th><th>السعر الكلي</th><th>المدفوع</th><th>المتبقي (أقساط)</th>
                 <th><span className="sr-only">التفاصيل</span></th>
               </tr></thead>
               <tbody>
@@ -228,8 +249,8 @@ export default function Market() {
                     <td><span className="num">{areaOf(x)}</span> م²</td>
                     <td>{x.land_status ? <span className={`pill ${x.land_status === RECEIVED_STATUS ? 'got' : 'st'}`}>{statusLabel(x.land_status)}</span> : <span className="muted">—</span>}</td>
                     <td className="price"><span className="num">{money(x.price)}</span><span className="cur">ج</span></td>
-                    <td><Amount x={x} value={dueOf(x)} className="paid" /></td>
-                    <td><Amount x={x} value={remainingOf(x)} className="rem" /></td>
+                    <td><Amount x={x} value={x.paid} className="paid" /></td>
+                    <td>{remainingOf(x) > 0 ? <span className="rem"><span className="num">{money(remainingOf(x))}</span><span className="cur">ج</span></span> : <span className="muted">—</span>}</td>
                     <td className="more-cell">
                       <button className="btn more" tabIndex={-1} onClick={(e) => { e.stopPropagation(); setSelected(x); }}>
                         تفاصيل أكثر <span aria-hidden="true">←</span>
@@ -265,10 +286,10 @@ export default function Market() {
                     <span className="k">السعر المطلوب</span>
                     <b><span className="num">{money(x.price)}</span> <small>جنيه</small></b>
                   </div>
-                  {hasPayment(x) && (
+                  {(hasPayment(x) || remainingOf(x) > 0) && (
                     <div className="r-pay">
-                      <span>المطلوب دفعه <b className="paid num">{money(dueOf(x))}</b></span>
-                      <span>المتبقي <b className="rem num">{money(remainingOf(x))}</b></span>
+                      {hasPayment(x) && <span>المدفوع <b className="paid num">{money(x.paid)}</b></span>}
+                      {remainingOf(x) > 0 && <span>المتبقي (أقساط) <b className="rem num">{money(remainingOf(x))}</b></span>}
                     </div>
                   )}
                   <span className="btn more block" aria-hidden="true">تفاصيل أكثر <span>←</span></span>
@@ -298,8 +319,7 @@ export default function Market() {
       )}
 
       {modal === 'offer' && (
-        <ListingWizard mode="public" onClose={() => setModal(null)} onSubmit={submitOffer}
-          suggestions={{ districts: uniq(all.map((x) => x.district)), neighborhoods: uniq(all.map((x) => x.neighborhood)) }} />
+        <ListingWizard mode="public" onClose={() => setModal(null)} onSubmit={submitOffer} />
       )}
 
       {modal?.type === 'sent' && (
@@ -348,10 +368,9 @@ function Drawer({ item: x, zone, onClose }) {
         <SheetTop title={<>قطعة في {x.zone} <span className="code num">{listingCode(x.id)}</span></>} onClose={onClose} />
         <div className="money">
           <div className="big"><label>السعر الكلي</label><strong><span className="num">{money(x.price)}</span> ج</strong></div>
-          {hasPayment(x) && (<>
-            <div><label>المطلوب دفعه</label><strong><span className="num">{money(dueOf(x))}</span> ج</strong></div>
-            <div><label>المتبقي</label><strong><span className="num">{money(remainingOf(x))}</span> ج</strong></div>
-          </>)}
+          {hasPayment(x) && <div><label>المدفوع</label><strong><span className="num">{money(x.paid)}</span> ج</strong></div>}
+          {Number(x.over_amount) > 0 && hasPayment(x) && <div><label>الأوفر</label><strong><span className="num">{money(x.over_amount)}</span> ج</strong></div>}
+          {remainingOf(x) > 0 && <div><label>المتبقي (أقساط)</label><strong><span className="num">{money(remainingOf(x))}</span> ج</strong></div>}
         </div>
         <div className="sec-title">بيانات القطعة</div>
         <dl className="kv">
