@@ -161,7 +161,7 @@ export default function Admin() {
         {user === undefined || (user && isAdmin === undefined) ? (
           <div className="state">بنحمّل...</div>
         ) : !user ? (
-          <AuthModal inline initialMode="in" why="لوحة الإدارة للمسؤولين بس. لو أول مرة تدخل، اختار &quot;حساب جديد&quot; وسجل برقم الإدارة." onDone={() => {}} />
+          <AuthModal inline initialMode="in" allowRegister={false} onDone={() => {}} />
         ) : !isAdmin ? (
           <div className="state">
             <b>الحساب ده ({me.phone}) مش مسؤول.</b>
