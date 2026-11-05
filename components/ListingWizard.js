@@ -9,7 +9,7 @@ import {
 import SheetTop from './SheetTop';
 
 const STEP_NAMES = ['المكان', 'المساحة والحالة', 'مميزات القطعة', 'السعر والدفع', 'البيانات'];
-const OPTIONAL_ITEMS = [['completion', 'دفعة الاستكمال'], ['inst', 'أقساط']];
+const PAY_CHOICES = [['check', 'شيك التقنين'], ['inst', 'الأقساط'], ['completion', 'دفعة الاستكمال'], ['waiver', 'مصاريف التنازل']];
 
 const blank = () => ({
   zone: '', district: '', neighborhood: '', block: '', plot_number: '',
@@ -34,7 +34,7 @@ function fromListing(x) {
     received: p.received || '',
     over_amount: x.over_amount || legacyOver || '',
     check_manual: p.check && checkByArea(area) == null ? p.check : '',
-    payOn: { completion: !!p.completion, inst: !!p.inst },
+    payOn: { check: !!p.check, waiver: !!p.waiver, completion: !!p.completion, inst: !!p.inst },
     pay: {
       completion: p.completion || '', completion_paid: !!p.completion_paid, completion_due: p.completion_due || '',
       inst: { value: p.inst?.value || '', first: p.inst?.first || '', last: p.inst?.last || '' },
@@ -50,8 +50,9 @@ const areaIn = (d) => num(d.area_final) || num(d.area_orig) || 0;
 function asListing(d) {
   const received = d.land_status === RECEIVED_STATUS;
   const area = areaIn(d);
-  const check = checkByArea(area) ?? (num(d.check_manual) || 0);
-  const pay = { v: 5, check, waiver: Math.round(area * WAIVER_PER_M) };
+  const pay = { v: 5 };
+  if (d.payOn.check) pay.check = checkByArea(area) ?? (num(d.check_manual) || 0);
+  if (d.payOn.waiver) pay.waiver = Math.round(area * WAIVER_PER_M);
   if (received && d.received) pay.received = d.received;
   if (d.payOn.completion) {
     const paid = !!d.pay.completion_paid && !NOT_ALLOCATED.includes(d.land_status);
@@ -244,24 +245,22 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             <Money full id="w-over" label="الأوفر المطلوب (جنيه)" value={d.over_amount} onChange={(v) => set('over_amount', v)} />
             <Auto full label="المتبقي" value={b.remaining} note="المطلوب دفعه ولكن لا يدفع (يدفعه المشتري لاحقاً)" />
 
-            <div className="field full"><span className="lbl sec-lbl">البنود المدفوعة</span></div>
+            <div className="field full"><span className="lbl sec-lbl">البنود المدفوعة (اختار اللي يخصك)</span>
+              <div className="chips toggle">
+                {PAY_CHOICES.map(([k, t]) => <button key={k} type="button" aria-pressed={!!d.payOn[k]} onClick={() => togglePay(k)}>{t}</button>)}
+              </div></div>
 
-            <div className="full paybox">
+            {d.payOn.check && (<div className="full paybox">
               {checkTier != null || !area
                 ? <Auto label="شيك التقنين" value={b.check} empty="اكتب المساحة في الخطوة التانية" />
                 : <Money id="w-check" label="شيك التقنين (المساحة خارج الشرايح، اكتب القيمة)" value={d.check_manual} onChange={(v) => set('check_manual', v)} />}
               <p className="paynote">{checkUnpaid ? 'الشيك مش مدفوع، فبيتضاف على المتبقي.' : 'بيتضاف على المطلوب دفعه.'}</p>
-            </div>
+            </div>)}
 
-            <div className="full paybox">
-              <Auto label="قيمة التنازل" value={b.waiver} empty="اكتب المساحة في الخطوة التانية" note={`${WAIVER_PER_M} ج × المساحة بعد التقنين`} />
+            {d.payOn.waiver && (<div className="full paybox">
+              <Auto label="مصاريف التنازل" value={b.waiver} empty="اكتب المساحة في الخطوة التانية" note={`${WAIVER_PER_M} ج × المساحة بعد التقنين`} />
               <p className="paynote">بتتضاف على المتبقي.</p>
-            </div>
-
-            <div className="field full"><span className="lbl">بنود تانية (اختار اللي يخصك)</span>
-              <div className="chips toggle">
-                {OPTIONAL_ITEMS.map(([k, t]) => <button key={k} type="button" aria-pressed={!!d.payOn[k]} onClick={() => togglePay(k)}>{t}</button>)}
-              </div></div>
+            </div>)}
 
             {d.payOn.completion && (
               <div className="full paybox">

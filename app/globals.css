@@ -458,3 +458,12 @@ body:has(.bottom-bar) { padding-bottom: calc(70px + env(safe-area-inset-bottom, 
 .paynote.full { grid-column: 1 / -1; margin: 0; }
 .sec-lbl { font-size: 15px !important; font-weight: 700; color: var(--forest) !important; border-top: 1px solid var(--line); padding-top: 12px; }
 .paybox .chk.full { grid-column: 1 / -1; }
+
+/* Popups on phones stop under the header, so the logo stays clear and not dimmed. */
+@media (max-width: 760px) {
+  body:has(.modal, .drawer, .filters.open) .site-header { z-index: 40; }
+  .drawer, .filters { max-height: calc(100% - var(--hdr, 56px) - 6px); }
+  .sheet, .sheet.narrow { max-height: calc(100% - var(--hdr, 56px) - 6px); }
+  .inline-auth .sheet { max-height: none; }
+  .modal.center .sheet { max-height: calc(100% - 40px); }
+}
