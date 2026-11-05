@@ -453,3 +453,8 @@ body:has(.bottom-bar) { padding-bottom: calc(70px + env(safe-area-inset-bottom, 
 }
 @media (min-width: 761px) { .factions .apply { display: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+.paynote { margin: 6px 0 0; font-size: 12.5px; color: var(--teal); font-weight: 600; }
+.paynote.full { grid-column: 1 / -1; margin: 0; }
+.sec-lbl { font-size: 15px !important; font-weight: 700; color: var(--forest) !important; border-top: 1px solid var(--line); padding-top: 12px; }
+.paybox .chk.full { grid-column: 1 / -1; }

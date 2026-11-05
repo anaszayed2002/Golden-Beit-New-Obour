@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
-  SITE, money, listingCode, userInfo, areaOf, remainingOf, payRows, statusLabel,
+  SITE, money, listingCode, userInfo, areaOf, breakdown, deliveryRows, payRows, statusLabel,
   parseCode, normalizePhone, toEnglishDigits, waTo, serverError,
 } from '@/lib/site';
 import { useSession, useToast, useBodyLock } from './hooks';
@@ -299,10 +299,12 @@ export default function Admin() {
 
 function ListingCard({ x, highlight, busy, confirming, onStatus, onEdit, onAskDelete, onCancelDelete, onDelete }) {
   const rows = payRows(x);
+  const b = breakdown(x);
+  const delivery = deliveryRows(x);
   return (
     <article id={`card-${x.id}`} className={`aitem${highlight ? ' hl' : ''}`}>
       <div className="ahead">
-        <b>{[x.zone, x.district, x.neighborhood].filter(Boolean).join(' · ')}</b>
+        <b>{[x.zone || 'من غير تقسيم', x.district, x.neighborhood].filter(Boolean).join(' · ')}</b>
         <span className="muted"><span className="num">{listingCode(x.id)}</span> · {fmtDate(x.created_at)}</span>
         <span className={`pill st-${x.status}`}>{STATUS[x.status]}</span>
       </div>
@@ -313,10 +315,10 @@ function ListingCard({ x, highlight, busy, confirming, onStatus, onEdit, onAskDe
         <dt>رقم القطعة</dt><dd className="num">{x.plot_number || 'لسه متخصصتش'}</dd>
       </dl>
       <div className="amoney">
-        <div><label>السعر الكلي</label><strong className="num">{money(x.price)}</strong></div>
-        <div><label>المدفوع</label><strong className="num paid">{money(x.paid)}</strong></div>
-        <div><label>الأوفر</label><strong className="num">{money(x.over_amount)}</strong></div>
-        <div><label>المتبقي (أقساط)</label><strong className="num rem">{money(remainingOf(x))}</strong></div>
+        <div><label>السعر الكلي</label><strong className="num">{money(b.price)}</strong></div>
+        <div><label>المطلوب دفعه</label><strong className="num paid">{money(b.paid)}</strong></div>
+        <div><label>الأوفر</label><strong className="num">{money(b.over)}</strong></div>
+        <div><label>المتبقي</label><strong className="num rem">{money(b.remaining)}</strong></div>
       </div>
       <dl className="akv">
         <dt>المساحة</dt><dd>
@@ -327,6 +329,7 @@ function ListingCard({ x, highlight, busy, confirming, onStatus, onEdit, onAskDe
         <dt>الحالة</dt><dd>{statusLabel(x.land_status) || <span className="muted">مش متحددة</span>}</dd>
         {(x.facade || x.view_type) && (<><dt>الواجهة / الإطلالة</dt><dd>{x.facade || '—'} / {x.view_type || '—'}</dd></>)}
         {rows.length > 0 && (<><dt>بنود الدفع</dt><dd>{rows.map(([k, v]) => `${k}: ${v}`).join(' · ')}</dd></>)}
+        {delivery.flatMap(([k, v]) => [<dt key={k}>{k}</dt>, <dd key={k + 'v'}>{v}</dd>])}
         {x.description && (<><dt>الوصف</dt><dd className="pre">{x.description}</dd></>)}
         {Number(x.request_count) > 0 && (<><dt>طلبات عليها</dt><dd className="num">{x.request_count}</dd></>)}
       </dl>

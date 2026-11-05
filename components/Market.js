@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import {
   SITE, STATUSES, FACADES, VIEWS, RECEIVED_STATUS, PHONE_RE, money, listingCode, waLink, areaOf,
   remainingOf, hasPayment, payRows, statusLabel, parseCode, normalizePhone, serverError, toEnglishDigits,
-  DISTRICTS, NEIGHBORHOODS, instValueOf, instCountOf, instLeftCountOf,
+  DISTRICTS, NEIGHBORHOODS, instValueOf, instCountOf, instLeftCountOf, breakdown, deliveryRows, placeOf,
 } from '@/lib/site';
 import StopRange from './StopRange';
 
@@ -34,9 +34,9 @@ const SORT_FIELDS = [
   ['date', 'تاريخ النشر', (x) => new Date(x.created_at).getTime()],
   ['price', 'السعر الكلي', (x) => x.price],
   ['area', 'المساحة', (x) => areaOf(x)],
-  ['paid', 'المدفوع', (x) => x.paid],
+  ['paid', 'المطلوب دفعه', (x) => x.paid],
   ['over', 'الأوفر', (x) => x.over_amount],
-  ['rem', 'المتبقي (أقساط)', (x) => remainingOf(x)],
+  ['rem', 'المتبقي', (x) => remainingOf(x)],
   ['ival', 'قيمة القسط', (x) => instValueOf(x)],
   ['ileft', 'عدد الأقساط المتبقية', (x) => instLeftCountOf(x) ?? instCountOf(x)],
   ['code', 'كود الوحدة', (x) => x.id],
@@ -84,7 +84,7 @@ export default function Market() {
     ]);
     if (l.error) { setLoadError(true); setListings([]); return; }
     setLoadError(false);
-    setListings(l.data.map((x) => ({ ...x, price: Number(x.price), paid: Number(x.paid), over_amount: Number(x.over_amount) })));
+    setListings(l.data.map((x) => { const b = breakdown(x); return { ...x, price: b.price, paid: b.paid, over_amount: b.over }; }));
     if (!z.error) setZones(Object.fromEntries(z.data.map((r) => [r.name, r])));
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -214,7 +214,7 @@ export default function Market() {
             min={filters.amin} max={filters.amax} onChange={setRange('amin', 'amax')} />
           <StopRange id="f-price" label="السعر الكلي (جنيه)" unit="ج" stops={PRICE_STOPS} labels={PRICE_LABELS}
             min={filters.pmin} max={filters.pmax} onChange={setRange('pmin', 'pmax')} />
-          {[['paid', 'المدفوع لحد', 'أقصى مبلغ'], ['over', 'الأوفر لحد', 'أقصى مبلغ'], ['rem', 'المتبقي (أقساط) لحد', 'أقصى مبلغ'],
+          {[['paid', 'المطلوب دفعه لحد', 'أقصى مبلغ'], ['over', 'الأوفر لحد', 'أقصى مبلغ'], ['rem', 'المتبقي لحد', 'أقصى مبلغ'],
             ['ival', 'قيمة القسط لحد', 'أقصى قسط'], ['ileft', 'عدد الأقساط المتبقية لحد', 'أقصى عدد']].map(([k, t, ph]) => (
             <div className="f" key={k}><label htmlFor={`f-${k}`}>{t}</label>
               <input id={`f-${k}`} type="text" inputMode="numeric" placeholder={ph}
@@ -245,7 +245,7 @@ export default function Market() {
           <>
             <div className="tablebox listings"><table>
               <thead><tr>
-                <th>الكود</th><th>المكان</th><th>المساحة</th><th>الحالة</th><th>السعر الكلي</th><th>المدفوع</th><th>المتبقي (أقساط)</th>
+                <th>الكود</th><th>المكان</th><th>المساحة</th><th>الحالة</th><th>السعر الكلي</th><th>المطلوب دفعه</th><th>المتبقي</th>
                 <th><span className="sr-only">التفاصيل</span></th>
               </tr></thead>
               <tbody>
@@ -254,7 +254,7 @@ export default function Market() {
                   <tr key={x.id} tabIndex={0} className={selected?.id === x.id ? 'sel' : ''}
                     onClick={() => setSelected(x)} onKeyDown={(e) => e.key === 'Enter' && setSelected(x)}>
                     <td className="code num">{listingCode(x.id)}</td>
-                    <td className="place"><span className="zone">{x.zone}</span>
+                    <td className="place"><span className="zone">{placeOf(x)}</span>
                       {(x.district || x.neighborhood) && <small>{[x.district, x.neighborhood].filter(Boolean).join(' · ')}</small>}</td>
                     <td><span className="num">{areaOf(x)}</span> م²</td>
                     <td>{x.land_status ? <span className={`pill ${x.land_status === RECEIVED_STATUS ? 'got' : 'st'}`}>{statusLabel(x.land_status)}</span> : <span className="muted">—</span>}</td>
@@ -275,7 +275,7 @@ export default function Market() {
               {visible.map((x) => (
                 <button key={x.id} className="row" onClick={() => setSelected(x)}>
                   <div className="r-top">
-                    <span className="r-zone">{x.zone}</span>
+                    <span className="r-zone">{placeOf(x)}</span>
                     <span className="r-code">كود الوحدة <b className="num">{listingCode(x.id)}</b></span>
                   </div>
                   {(x.district || x.neighborhood) && (
@@ -298,8 +298,8 @@ export default function Market() {
                   </div>
                   {(hasPayment(x) || remainingOf(x) > 0) && (
                     <div className="r-pay">
-                      {hasPayment(x) && <span>المدفوع <b className="paid num">{money(x.paid)}</b></span>}
-                      {remainingOf(x) > 0 && <span>المتبقي (أقساط) <b className="rem num">{money(remainingOf(x))}</b></span>}
+                      {hasPayment(x) && <span>المطلوب دفعه <b className="paid num">{money(x.paid)}</b></span>}
+                      {remainingOf(x) > 0 && <span>المتبقي <b className="rem num">{money(remainingOf(x))}</b></span>}
                     </div>
                   )}
                   <span className="btn more block" aria-hidden="true">تفاصيل أكثر <span>←</span></span>
@@ -357,7 +357,8 @@ function Drawer({ item: x, zone, onClose }) {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const rows = payRows(x);
-  const msg = `السلام عليكم، أنا مهتم بالقطعة كود ${listingCode(x.id)}: ${x.zone}، ${areaOf(x)} م²، السعر ${money(x.price)} جنيه.`;
+  const delivery = deliveryRows(x);
+  const msg = `السلام عليكم، أنا مهتم بالقطعة كود ${listingCode(x.id)}: ${placeOf(x)}، ${areaOf(x)} م²، السعر ${money(x.price)} جنيه.`;
   const geo = zone && [['اللوكيشن', zone.location], ['المحاور', zone.axes], ['الخدمات', zone.services]].filter(([, v]) => v);
 
   async function buy(e) {
@@ -375,12 +376,12 @@ function Drawer({ item: x, zone, onClose }) {
   return (
     <aside className="drawer" aria-label="تفاصيل القطعة">
       <div className="body">
-        <SheetTop title={<>قطعة في {x.zone} <span className="code num">{listingCode(x.id)}</span></>} onClose={onClose} />
+        <SheetTop title={<>قطعة في {placeOf(x)} <span className="code num">{listingCode(x.id)}</span></>} onClose={onClose} />
         <div className="money">
           <div className="big"><label>السعر الكلي</label><strong><span className="num">{money(x.price)}</span> ج</strong></div>
-          {hasPayment(x) && <div><label>المدفوع</label><strong><span className="num">{money(x.paid)}</span> ج</strong></div>}
+          {hasPayment(x) && <div><label>المطلوب دفعه</label><strong><span className="num">{money(x.paid)}</span> ج</strong></div>}
           {Number(x.over_amount) > 0 && hasPayment(x) && <div><label>الأوفر</label><strong><span className="num">{money(x.over_amount)}</span> ج</strong></div>}
-          {remainingOf(x) > 0 && <div><label>المتبقي (أقساط)</label><strong><span className="num">{money(remainingOf(x))}</span> ج</strong></div>}
+          {remainingOf(x) > 0 && <div><label>المتبقي</label><strong><span className="num">{money(remainingOf(x))}</span> ج</strong></div>}
         </div>
         <div className="sec-title">بيانات القطعة</div>
         <dl className="kv">
@@ -391,6 +392,10 @@ function Drawer({ item: x, zone, onClose }) {
           {x.facade && (<><dt>الواجهة</dt><dd>{x.facade}</dd></>)}
           {x.view_type && (<><dt>الإطلالة</dt><dd>{x.view_type}</dd></>)}
         </dl>
+        {delivery.length > 0 && (<>
+          <div className="sec-title">مسار التسليم والبناء</div>
+          <dl className="kv">{delivery.flatMap(([k, v]) => [<dt key={k}>{k}</dt>, <dd key={k + 'v'}>{v}</dd>])}</dl>
+        </>)}
         {rows.length > 0 && (<>
           <div className="sec-title">بنود الدفع</div>
           <div className="paylist">{rows.map(([k, v]) => <div key={k}><label>{k}</label><strong className="num">{v}</strong></div>)}</div>
