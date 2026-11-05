@@ -467,3 +467,9 @@ body:has(.bottom-bar) { padding-bottom: calc(70px + env(safe-area-inset-bottom, 
   .inline-auth .sheet { max-height: none; }
   .modal.center .sheet { max-height: calc(100% - 40px); }
 }
+.parts { list-style: none; margin: 6px 0 0; padding: 8px 10px; background: #f6f8f6; border-radius: 8px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.parts li { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); }
+.parts li b { color: var(--forest); }
+.paynote.route { padding: 8px 10px; border-radius: 8px; margin-top: 8px; }
+.paynote.to-paid { background: #e6f2ec; color: var(--teal); }
+.paynote.to-rem { background: #fbf3dd; color: #8a6510; }
