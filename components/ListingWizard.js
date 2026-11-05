@@ -10,7 +10,7 @@ import SheetTop from './SheetTop';
 
 const STEP_NAMES = ['المكان', 'المساحة والحالة', 'مميزات القطعة', 'السعر والدفع', 'البيانات'];
 // شيك التقنين is not a choice: it is always shown and calculated from the area.
-const PAY_CHOICES = [['inst', 'الأقساط'], ['completion', 'دفعة الاستكمال'], ['waiver', 'مصاريف التنازل']];
+const PAY_CHOICES = [['inst', 'الأقساط'], ['completion', 'دفعة الاستكمال']];
 
 const blank = () => ({
   zone: '', district: '', neighborhood: '', block: '', plot_number: '',
@@ -53,7 +53,7 @@ function asListing(d) {
   const area = areaIn(d);
   const pay = { v: 5 };
   pay.check = checkByArea(area) ?? (num(d.check_manual) || 0);
-  if (d.payOn.waiver) pay.waiver = Math.round(area * WAIVER_PER_M);
+  pay.waiver = Math.round(area * WAIVER_PER_M);
   if (received && d.received) pay.received = d.received;
   if (d.payOn.completion) {
     const paid = !!d.pay.completion_paid && !NOT_ALLOCATED.includes(d.land_status);
@@ -274,15 +274,17 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                   : 'الشيك مدفوع ← اتضاف تلقائياً في خانة المطلوب دفعه.'}</p>}
             </div>
 
+            <div className="full paybox">
+              <Auto label="مصاريف التنازل" value={b.waiver} empty="اكتب المساحة في الخطوة التانية"
+                note={area ? `${WAIVER_PER_M} ج × ${area} م²` : `${WAIVER_PER_M} ج × المساحة بعد التقنين`} />
+              <p className="paynote route to-rem">مصاريف التنازل ← اتضافت تلقائياً في خانة المتبقي.</p>
+            </div>
+
             <div className="field full"><span className="lbl sec-lbl">بنود تانية (اختار اللي يخصك)</span>
               <div className="chips toggle">
                 {PAY_CHOICES.map(([k, t]) => <button key={k} type="button" aria-pressed={!!d.payOn[k]} onClick={() => togglePay(k)}>{t}</button>)}
               </div></div>
 
-            {d.payOn.waiver && (<div className="full paybox">
-              <Auto label="مصاريف التنازل" value={b.waiver} empty="اكتب المساحة في الخطوة التانية" note={`${WAIVER_PER_M} ج × المساحة بعد التقنين`} />
-              <p className="paynote">بتتضاف على المتبقي.</p>
-            </div>)}
 
             {d.payOn.completion && (
               <div className="full paybox">
@@ -343,6 +345,10 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                 <dt>المطلوب دفعه</dt><dd className="num">{money(b.paid)} ج</dd>
                 <dt>الأوفر</dt><dd className="num">{money(b.over)} ج</dd>
                 <dt>المتبقي</dt><dd className="num">{money(b.remaining)} ج</dd>
+                <dt>شيك التقنين</dt><dd><span className="num">{money(b.check)} ج</span> · {b.checkPaid ? 'مدفوع (في المطلوب دفعه)' : 'غير مدفوع (في المتبقي)'}</dd>
+                <dt>مصاريف التنازل</dt><dd><span className="num">{money(b.waiver)} ج</span> · في المتبقي</dd>
+                {b.comp > 0 && (<><dt>دفعة الاستكمال</dt><dd><span className="num">{money(b.comp)} ج</span> · {b.compPaid ? 'مدفوعة (في المطلوب دفعه)' : 'في المتبقي'}</dd></>)}
+                {b.inst && (<><dt>الأقساط</dt><dd><span className="num">{b.inst.paidN}</span> مدفوع · <span className="num">{b.inst.leftN}</span> متبقي</dd></>)}
               </dl></div>
           </div>
         )}
