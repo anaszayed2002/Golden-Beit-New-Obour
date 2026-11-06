@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, photoUrl } from '@/lib/supabase';
 import {
   SITE, money, listingCode, userInfo, areaOf, breakdown, deliveryRows, payRows, statusLabel,
   parseCode, normalizePhone, toEnglishDigits, waTo, serverError,
@@ -314,6 +314,9 @@ function ListingCard({ x, highlight, busy, confirming, onStatus, onEdit, onAskDe
         <dt>البلوك</dt><dd className="num">{x.block || '—'}</dd>
         <dt>رقم القطعة</dt><dd className="num">{x.plot_number || 'لسه متخصصتش'}</dd>
       </dl>
+      {x.photo
+        ? <a className="a-photo" href={photoUrl(x.photo)} target="_blank" rel="noopener noreferrer"><img src={photoUrl(x.photo)} alt={`صورة ${listingCode(x.id)}`} loading="lazy" /></a>
+        : <p className="muted a-nophoto">مفيش صورة للقطعة.</p>}
       <div className="amoney">
         <div><label>السعر الكلي</label><strong className="num">{money(b.price)}</strong></div>
         <div><label>المطلوب دفعه</label><strong className="num paid">{money(b.paid)}</strong></div>

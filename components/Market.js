@@ -30,7 +30,7 @@ const CMP_KEY = 'gb-nob-compare';
 const readCompare = () => { try { return JSON.parse(localStorage.getItem(CMP_KEY) || '[]').filter(Number.isInteger); } catch { return []; } };
 const writeCompare = (ids) => { try { localStorage.setItem(CMP_KEY, JSON.stringify(ids)); } catch { /* private mode */ } };
 
-const LISTING_COLUMNS = 'id,zone,area,district,neighborhood,area_orig,area_final,land_status,facade,view_type,price,paid,over_amount,pay,description,created_at';
+const LISTING_COLUMNS = 'id,zone,area,district,neighborhood,area_orig,area_final,land_status,facade,view_type,price,paid,over_amount,pay,description,created_at,photo';
 const EMPTY = {
   zone: '', district: '', neighborhood: '', status: '', facade: '', view: '',
   pmin: '', pmax: '', amin: '', amax: '', paid: '', over: '', rem: '', ival: '', ileft: '',
@@ -319,7 +319,7 @@ export default function Market() {
                   )}
                   <div className="r-price">
                     <span className="k">السعر المطلوب</span>
-                    <b><span className="num">{money(x.price)}</span> <small>جنيه</small></b>
+                    <b><span className="num">{money(x.price)}</span><em className="cur-egp">جنيه</em></b>
                   </div>
                   <div className="r-facts">
                     <div><span className="k">المساحة</span><b><span className="num">{areaOf(x)}</span> م²</b></div>
@@ -335,7 +335,7 @@ export default function Market() {
                   )}
                   <div className="r-acts" onClick={(e) => e.stopPropagation()}>
                     <button className="btn more" onClick={() => setSelected(x)}>تفاصيل أكثر <span aria-hidden="true">←</span></button>
-                    <button className="btn soft" onClick={() => setCardOf(x)}><CardIcon /> بطاقة</button>
+                    <button className="btn soft" onClick={() => setCardOf(x)}><CardIcon /> عرض كبطاقة</button>
                     <button className="btn soft" aria-pressed={cmp.includes(x.id)} onClick={() => toggleCmp(x.id)}><CompareIcon /> {cmp.includes(x.id) ? 'مضافة' : 'قارن'}</button>
                   </div>
                 </article>

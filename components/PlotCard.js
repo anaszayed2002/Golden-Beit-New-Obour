@@ -1,6 +1,7 @@
 'use client';
 import { SITE, money, listingCode, areaOf, placeOf, waLink } from '@/lib/site';
 import SheetTop from './SheetTop';
+import { photoUrl } from '@/lib/supabase';
 import { WhatsAppIcon } from './icons';
 
 // A simple sketch of the plot: the plot in the middle, neighbours around it, the street in front.
@@ -40,7 +41,7 @@ export default function PlotCard({ x, onClose }) {
       <div className="sheet narrow has-top pcard-sheet" role="dialog" aria-label={`بطاقة ${listingCode(x.id)}`}>
         <SheetTop title="بطاقة القطعة" onClose={onClose} />
         <article className="pcard">
-          <Sketch x={x} />
+          {x.photo ? <img className="pc-photo" src={photoUrl(x.photo)} alt={`صورة القطعة ${listingCode(x.id)}`} /> : <Sketch x={x} />}
           <dl>
             {rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
             <div className="pc-price"><dt>السعر الكلي</dt><dd><span className="num">{money(x.price)}</span> ج</dd></div>

@@ -7,13 +7,14 @@ import {
   breakdown, checkByArea, addYears, fmtMonth, monthBefore,
 } from '@/lib/site';
 import SheetTop from './SheetTop';
+import { uploadPhoto, photoUrl } from '@/lib/supabase';
 
-const STEP_NAMES = ['المكان', 'المساحة والحالة', 'مميزات القطعة', 'السعر والدفع', 'البيانات'];
+const STEP_NAMES = ['المكان', 'المساحة والحالة', 'المميزات والصورة', 'السعر والدفع', 'البيانات'];
 
 const blank = () => ({
   zone: '', district: '', neighborhood: '', block: '', plot_number: '',
   area_orig: '', area_final: '', land_status: 0, facade: '', view_type: '', received: '',
-  over_amount: '', check_manual: '',
+  over_amount: '', check_manual: '', photo: '',
   pay: { completion: '', completion_paid: false, completion_due: '', inst: { value: '', first: '', last: '' } },
   description: '', owner_name: '', contact_phone: '',
 });
@@ -38,6 +39,7 @@ function fromListing(x) {
       inst: { value: p.inst?.value || '', first: p.inst?.first || '', last: p.inst?.last || '' },
     },
     description: x.description || '', owner_name: x.owner_name || '', contact_phone: x.contact_phone || '',
+    photo: x.photo || '',
   };
 }
 
@@ -74,10 +76,12 @@ function toPayload(d) {
     land_status: d.land_status, facade: d.facade, view_type: d.view_type,
     price: b.price, paid: b.paid, over_amount: b.over, pay: l.pay,
     description: d.description.trim(), owner_name: d.owner_name.trim(), contact_phone: normalizePhone(d.contact_phone),
+    photo: d.photo,
   };
 }
 
-function validate(step, d) {
+function validate(step, d, admin) {
+  if (step === 2 && !admin && !d.photo) return 'ارفع صورة القطعة أو الخريطة وعليها سهم على مكان القطعة.';
   const received = d.land_status === RECEIVED_STATUS;
   if (step === 1 && !(num(d.area_final) > 0 || num(d.area_orig) > 0)) return 'اكتب المساحة.';
   if (step === 1 && !d.land_status) return 'اختار حالة القطعة.';
@@ -116,6 +120,46 @@ function Auto({ label, value, empty, note, count, text, full, parts }) {
         <ul className="parts">{parts.map(([k, v]) => <li key={k}><span>{k}</span><b className="num">{money(v)} ج</b></li>)}</ul>
       )}
       {note && <span className="hint">{note}</span>}
+    </div>
+  );
+}
+
+// Plot photo: uploaded right away, so the form only keeps its path.
+function PhotoField({ value, onChange, required }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  async function pick(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setErr(''); setBusy(true);
+    try { onChange(await uploadPhoto(file)); } catch (x) { setErr(x?.message === 'not_image' ? 'اختار صورة (JPG أو PNG).' : 'الصورة مترفعتش. جرب تاني أو اختار صورة تانية.'); }
+    setBusy(false);
+  }
+  return (
+    <div className="field full photo-field">
+      <span className="lbl sec-lbl">صورة القطعة{required ? ' · إجباري' : ''}</span>
+      <div className="photo-guide">
+        <b>إزاي تصوّرها؟</b>
+        <ul>
+          <li>صوّر القطعة نفسها من الشارع، <span>أو</span></li>
+          <li>خد سكرين شوت من الخريطة (جوجل ماب أو خريطة الجهاز) وارسم عليها <b>سهم</b> على مكان القطعة.</li>
+        </ul>
+      </div>
+      {value ? (
+        <div className="photo-prev">
+          <img src={photoUrl(value)} alt="صورة القطعة" />
+          <label className="btn soft">تغيير الصورة<input type="file" accept="image/*" onChange={pick} hidden /></label>
+        </div>
+      ) : (
+        <label className={`photo-drop${busy ? ' busy' : ''}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="3" /><circle cx="12" cy="12.5" r="3.5" /><path d="M8.5 5l1.5-2h4l1.5 2" /></svg>
+          <b>{busy ? 'بنرفع الصورة...' : 'اضغط هنا وارفع الصورة'}</b>
+          <small>من الكاميرا أو من الصور على موبايلك</small>
+          <input type="file" accept="image/*" onChange={pick} disabled={busy} hidden />
+        </label>
+      )}
+      {err && <p className="form-error">{err}</p>}
     </div>
   );
 }
@@ -181,7 +225,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
   async function next(e) {
     e.preventDefault();
-    const err = validate(step, d);
+    const err = validate(step, d, admin);
     if (err) return setError(err);
     if (!last) return go(step + 1);
     setBusy(true);
@@ -251,12 +295,21 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
           <div className="grid">
             <div className="field full"><span className="lbl">الواجهة</span><Chips options={FACADES} value={d.facade} onPick={(v) => set('facade', v)} /></div>
             <div className="field full"><span className="lbl">الإطلالة</span><Chips options={VIEWS} value={d.view_type} onPick={(v) => set('view_type', v)} /></div>
+            <PhotoField value={d.photo} onChange={(v) => { set('photo', v); setError(''); }} required={!admin} />
           </div>
         )}
 
         {step === 3 && (
           <div className="pay-step">
-            <Money id="w-over" label="الأوفر المطلوب (جنيه) · إجباري" value={d.over_amount} onChange={(v) => set('over_amount', v)} />
+            <div className="over-box">
+              <label htmlFor="w-over">الأوفر المطلوب <em>إجباري</em></label>
+              <p>المبلغ اللي عايزه فوق المدفوع، بالجنيه.</p>
+              <div className="over-in">
+                <input id="w-over" type="number" inputMode="numeric" min="0" placeholder="مثلاً 500000" value={d.over_amount} onChange={(e) => set('over_amount', e.target.value)} />
+                <span>جنيه</span>
+              </div>
+              {d.over_amount !== '' && <small className="num">{money(num(d.over_amount))} ج</small>}
+            </div>
 
             <div className="ptotals" aria-live="polite">
               <div className="pt hero-t"><span>السعر الكلي <small>تلقائي</small></span><b><i className="num">{money(b.price)}</i> ج</b><small>المطلوب دفعه + الأوفر</small></div>
