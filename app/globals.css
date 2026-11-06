@@ -726,3 +726,5 @@ table.cmp b { color: var(--forest); }
 .pc-photo { display: block; width: 100%; max-height: 300px; object-fit: cover; background: #f7f6f2; }
 .a-photo img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; display: block; }
 .a-nophoto { margin: 0; font-size: 12.5px; }
+.rem-items { margin: 6px 0 0; padding-inline-start: 18px; color: var(--muted); font-size: 13px; line-height: 1.8; }
+.rem-items li::marker { color: var(--rem); }

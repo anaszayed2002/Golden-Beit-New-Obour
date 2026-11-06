@@ -220,6 +220,13 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
   const checkUnpaid = d.land_status === CHECK_UNPAID_STATUS;
   const notAllocated = NOT_ALLOCATED.includes(d.land_status);
   const checkTier = checkByArea(area);
+  // Names (no amounts) of what makes up المتبقي, for the quick review.
+  const remItems = [
+    b.check > 0 && !b.checkPaid && 'شيك التقنين',
+    b.comp > 0 && !b.compPaid && 'دفعة الاستكمال',
+    b.inst?.left > 0 && 'الأقساط المتبقية',
+    b.waiver > 0 && 'مصاريف التنازل',
+  ].filter(Boolean);
   const title = admin ? (editId ? `تعديل ${listingCode(editId)}` : 'إضافة إعلان') : 'اعرض قطعتك';
   const last = step === STEP_NAMES.length - 1;
 
@@ -312,11 +319,11 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             </div>
 
             <div className="ptotals" aria-live="polite">
-              <div className="pt hero-t"><span>السعر الكلي <small>تلقائي</small></span><b><i className="num">{money(b.price)}</i> ج</b><small>المطلوب دفعه + الأوفر</small></div>
+              <div className="pt hero-t"><span>السعر الكلي <small>تلقائي</small></span><b><i className="num">{money(b.price)}</i> ج</b><small>المطلوب دفعه + المتبقي</small></div>
               <div className="pt paid-t"><span>المطلوب دفعه <small>تلقائي</small></span>
                 {b.paid ? <b><i className="num">{money(b.paid)}</i> ج</b> : <b className="none">—</b>}
-                <small>المبلغ الذي دفعته فعلياً + شيك التقنين</small></div>
-              <div className="pt"><span>الأوفر</span><b><i className="num">{money(b.over)}</i> ج</b><small>اللي البائع عايزه فوق المدفوع</small></div>
+                <small>المبلغ الذي دفعته فعلياً + شيك التقنين + الأوفر</small></div>
+              <div className="pt"><span>الأوفر</span><b><i className="num">{money(b.over)}</i> ج</b><small>بيتضاف على المطلوب دفعه</small></div>
               <div className="pt rem-t"><span>المتبقي <small>تلقائي</small></span><b><i className="num">{money(b.remaining)}</i> ج</b>
                 <small>المطلوب دفعه ولكن لا يدفع (يدفعه المشتري لاحقاً)</small></div>
             </div>
@@ -384,15 +391,8 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                 <dt>المكان</dt><dd>{[SITE.governorate, d.zone, d.district, d.neighborhood].filter(Boolean).join(' · ')}</dd>
                 <dt>المساحة</dt><dd><span className="num">{d.area_final || d.area_orig}</span> م²</dd>
                 <dt>الحالة</dt><dd>{statusLabel(d.land_status)}</dd>
-                {received && d.received && (<><dt>تاريخ الاستلام</dt><dd>{fmtMonth(d.received)}</dd></>)}
-                <dt>السعر الكلي</dt><dd className="num">{money(b.price)} ج</dd>
-                <dt>المطلوب دفعه</dt><dd className="num">{money(b.paid)} ج</dd>
-                <dt>الأوفر</dt><dd className="num">{money(b.over)} ج</dd>
-                <dt>المتبقي</dt><dd className="num">{money(b.remaining)} ج</dd>
-                {b.check > 0 && (<><dt>شيك التقنين</dt><dd><span className="num">{money(b.check)} ج</span> · {b.checkPaid ? 'مدفوع (في المطلوب دفعه)' : 'غير مدفوع (في المتبقي)'}</dd></>)}
-                <dt>مصاريف التنازل</dt><dd><span className="num">{money(b.waiver)} ج</span> · في المتبقي</dd>
-                {b.comp > 0 && (<><dt>دفعة الاستكمال</dt><dd><span className="num">{money(b.comp)} ج</span> · {b.compPaid ? 'مدفوعة (في المطلوب دفعه)' : 'في المتبقي'}</dd></>)}
-                {b.inst && (<><dt>الأقساط</dt><dd><span className="num">{b.inst.paidN}</span> مدفوع · <span className="num">{b.inst.leftN}</span> متبقي</dd></>)}
+                <dt>إجمالي المتبقي</dt><dd><b className="num">{money(b.remaining)} ج</b>
+                  {remItems.length > 0 && <ul className="rem-items">{remItems.map((t) => <li key={t}>{t}</li>)}</ul>}</dd>
               </dl></div>
           </div>
         )}
