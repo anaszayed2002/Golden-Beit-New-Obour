@@ -7,6 +7,8 @@ import {
   DISTRICTS, NEIGHBORHOODS, instValueOf, instCountOf, instLeftCountOf, breakdown, deliveryRows, placeOf,
 } from '@/lib/site';
 import StopRange from './StopRange';
+import PlotCard from './PlotCard';
+import Compare from './Compare';
 
 // "—" instead of a misleading 0 when a listing has no paid/over amount.
 const Amount = ({ x, value, className, unit = 'ج' }) => (hasPayment(x)
@@ -17,6 +19,16 @@ import ListingWizard from './ListingWizard';
 import SheetTop from './SheetTop';
 import Footer from './Footer';
 import { WhatsAppIcon } from './icons';
+
+const CardIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="M3 15h18M8 9.5h8" /></svg>
+);
+const CompareIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M8 4v16M16 4v16M4 8h4M16 16h4M4 16h4M16 8h4" /></svg>
+);
+const CMP_KEY = 'gb-nob-compare';
+const readCompare = () => { try { return JSON.parse(localStorage.getItem(CMP_KEY) || '[]').filter(Number.isInteger); } catch { return []; } };
+const writeCompare = (ids) => { try { localStorage.setItem(CMP_KEY, JSON.stringify(ids)); } catch { /* private mode */ } };
 
 const LISTING_COLUMNS = 'id,zone,area,district,neighborhood,area_orig,area_final,land_status,facade,view_type,price,paid,over_amount,pay,description,created_at';
 const EMPTY = {
@@ -76,6 +88,15 @@ export default function Market() {
   const [code, setCode] = useState('');
   const [codeMsg, setCodeMsg] = useState('');
   const [toast, showToast] = useToast();
+  const [cmp, setCmp] = useState([]);
+  const [cardOf, setCardOf] = useState(null);
+  useEffect(() => { setCmp(readCompare()); }, []);
+  const toggleCmp = (id) => setCmp((ids) => {
+    const next = ids.includes(id) ? ids.filter((v) => v !== id) : [...ids, id];
+    writeCompare(next);
+    return next;
+  });
+  const clearCmp = () => { setCmp([]); writeCompare([]); };
 
   const load = useCallback(async () => {
     const [l, z] = await Promise.all([
@@ -88,6 +109,12 @@ export default function Market() {
     if (!z.error) setZones(Object.fromEntries(z.data.map((r) => [r.name, r])));
   }, []);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!listings) return;
+    const id = parseCode(new URLSearchParams(window.location.search).get('code') || '');
+    const x = id && listings.find((l) => l.id === id);
+    if (x) setSelected(x);
+  }, [listings]);
 
   const all = listings || [];
   const visible = useMemo(() => applyFilters(all, filters).sort(sorter(sort)), [all, filters, sort]);
@@ -98,10 +125,12 @@ export default function Market() {
     return next;
   });
 
-  useBodyLock(!!selected || !!modal || filtersOpen);
+  useBodyLock(!!selected || !!modal || filtersOpen || !!cardOf);
   useEscape(useCallback(() => {
-    if (sortOpen) setSortOpen(false); else if (modal) setModal(null); else if (filtersOpen) setFiltersOpen(false); else setSelected(null);
-  }, [modal, filtersOpen, sortOpen]));
+    if (sortOpen) setSortOpen(false); else if (cardOf) setCardOf(null); else if (modal) setModal(null);
+    else if (filtersOpen) setFiltersOpen(false); else setSelected(null);
+  }, [modal, filtersOpen, sortOpen, cardOf]));
+  const cmpItems = cmp.map((id) => all.find((x) => x.id === id)).filter(Boolean);
 
   function openCode(e) {
     e.preventDefault();
@@ -175,7 +204,7 @@ export default function Market() {
                 {SORT_FIELDS.map(([k, t]) => [
                   [`${k}:-1`, k === 'date' ? 'الأحدث الأول' : k === 'code' ? 'كود الوحدة: الأكبر الأول' : `${t}: تنازلي`],
                   [`${k}:1`, k === 'date' ? 'الأقدم الأول' : k === 'code' ? 'كود الوحدة: الأصغر الأول' : `${t}: تصاعدي`],
-                ]).flat().map(([v, label]) => (
+                ]).flat().filter(([v]) => v !== 'price:-1').map(([v, label]) => (
                   <button key={v} role="option" aria-selected={sort === v} onClick={() => { setSort(v); setSortOpen(false); }}>{label}</button>
                 ))}
               </div>
@@ -261,10 +290,12 @@ export default function Market() {
                     <td className="price"><span className="num">{money(x.price)}</span><span className="cur">ج</span></td>
                     <td><Amount x={x} value={x.paid} className="paid" /></td>
                     <td>{remainingOf(x) > 0 ? <span className="rem"><span className="num">{money(remainingOf(x))}</span><span className="cur">ج</span></span> : <span className="muted">—</span>}</td>
-                    <td className="more-cell">
-                      <button className="btn more" tabIndex={-1} onClick={(e) => { e.stopPropagation(); setSelected(x); }}>
-                        تفاصيل أكثر <span aria-hidden="true">←</span>
-                      </button>
+                    <td className="more-cell" onClick={(e) => e.stopPropagation()}>
+                      <div className="t-acts">
+                        <button className="ic-btn" title="عرض كبطاقة" aria-label={`عرض ${listingCode(x.id)} كبطاقة`} onClick={() => setCardOf(x)}><CardIcon /></button>
+                        <button className="ic-btn" title="قارن" aria-pressed={cmp.includes(x.id)} aria-label={`قارن ${listingCode(x.id)}`} onClick={() => toggleCmp(x.id)}><CompareIcon /></button>
+                        <button className="btn more" onClick={() => setSelected(x)}>تفاصيل <span aria-hidden="true">←</span></button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -273,7 +304,7 @@ export default function Market() {
             <div className="rows">
               {visible.length === 0 && <div className="empty">مفيش قطع بالمواصفات دي. جرّب توسّع الفلتر.</div>}
               {visible.map((x) => (
-                <button key={x.id} className="row" onClick={() => setSelected(x)}>
+                <article key={x.id} className="row" onClick={() => setSelected(x)}>
                   <div className="r-top">
                     <span className="r-zone">{placeOf(x)}</span>
                     <span className="r-code">كود الوحدة <b className="num">{listingCode(x.id)}</b></span>
@@ -286,15 +317,15 @@ export default function Market() {
                       {[x.district, x.neighborhood].filter(Boolean).join(' · ')}
                     </div>
                   )}
+                  <div className="r-price">
+                    <span className="k">السعر المطلوب</span>
+                    <b><span className="num">{money(x.price)}</span> <small>جنيه</small></b>
+                  </div>
                   <div className="r-facts">
                     <div><span className="k">المساحة</span><b><span className="num">{areaOf(x)}</span> م²</b></div>
                     {x.land_status
                       ? <div><span className="k">الحالة</span><b>{statusLabel(x.land_status)}</b></div>
                       : x.facade ? <div><span className="k">الواجهة</span><b>{x.facade}</b></div> : null}
-                  </div>
-                  <div className="r-price">
-                    <span className="k">السعر المطلوب</span>
-                    <b><span className="num">{money(x.price)}</span> <small>جنيه</small></b>
                   </div>
                   {(hasPayment(x) || remainingOf(x) > 0) && (
                     <div className="r-pay">
@@ -302,8 +333,12 @@ export default function Market() {
                       {remainingOf(x) > 0 && <span>المتبقي <b className="rem num">{money(remainingOf(x))}</b></span>}
                     </div>
                   )}
-                  <span className="btn more block" aria-hidden="true">تفاصيل أكثر <span>←</span></span>
-                </button>
+                  <div className="r-acts" onClick={(e) => e.stopPropagation()}>
+                    <button className="btn more" onClick={() => setSelected(x)}>تفاصيل أكثر <span aria-hidden="true">←</span></button>
+                    <button className="btn soft" onClick={() => setCardOf(x)}><CardIcon /> بطاقة</button>
+                    <button className="btn soft" aria-pressed={cmp.includes(x.id)} onClick={() => toggleCmp(x.id)}><CompareIcon /> {cmp.includes(x.id) ? 'مضافة' : 'قارن'}</button>
+                  </div>
+                </article>
               ))}
             </div>
           </>
@@ -324,9 +359,25 @@ export default function Market() {
       {selected && (
         <>
           <div className="scrim" onClick={() => setSelected(null)} />
-          <Drawer key={selected.id} item={selected} zone={zones[selected.zone]} onClose={() => setSelected(null)} />
+          <Drawer key={selected.id} item={selected} zone={zones[selected.zone]} onClose={() => setSelected(null)}
+            onCard={() => setCardOf(selected)} inCompare={cmp.includes(selected.id)} onCompare={() => toggleCmp(selected.id)} />
         </>
       )}
+
+      {cmpItems.length > 0 && !modal && !selected && !cardOf && (
+        <div className="cmp-bar" role="status">
+          <span><b className="num">{cmpItems.length}</b> {cmpItems.length === 1 ? 'قطعة' : 'قطع'} للمقارنة</span>
+          <button className="btn sm" onClick={clearCmp}>مسح</button>
+          <button className="btn sm primary" onClick={() => setModal('compare')}><CompareIcon /> قارن الآن</button>
+        </div>
+      )}
+
+      {modal === 'compare' && (
+        <Compare items={cmpItems} onRemove={toggleCmp} onClear={clearCmp} onClose={() => setModal(null)}
+          onOpen={(x) => { setModal(null); setSelected(x); }} />
+      )}
+
+      {cardOf && <PlotCard x={cardOf} onClose={() => setCardOf(null)} />}
 
       {modal === 'offer' && (
         <ListingWizard mode="public" onClose={() => setModal(null)} onSubmit={submitOffer} />
@@ -350,7 +401,7 @@ export default function Market() {
   );
 }
 
-function Drawer({ item: x, zone, onClose }) {
+function Drawer({ item: x, zone, onClose, onCard, inCompare, onCompare }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
@@ -377,6 +428,10 @@ function Drawer({ item: x, zone, onClose }) {
     <aside className="drawer" aria-label="تفاصيل القطعة">
       <div className="body">
         <SheetTop title={<>قطعة في {placeOf(x)} <span className="code num">{listingCode(x.id)}</span></>} onClose={onClose} />
+        <div className="d-acts">
+          <button className="btn soft" onClick={onCard}><CardIcon /> عرض كبطاقة</button>
+          <button className="btn soft" aria-pressed={inCompare} onClick={onCompare}><CompareIcon /> {inCompare ? 'مضافة للمقارنة' : 'أضف للمقارنة'}</button>
+        </div>
         <div className="money">
           <div className="big"><label>السعر الكلي</label><strong><span className="num">{money(x.price)}</span> ج</strong></div>
           {hasPayment(x) && <div><label>المطلوب دفعه</label><strong><span className="num">{money(x.paid)}</span> ج</strong></div>}

@@ -9,13 +9,11 @@ import {
 import SheetTop from './SheetTop';
 
 const STEP_NAMES = ['المكان', 'المساحة والحالة', 'مميزات القطعة', 'السعر والدفع', 'البيانات'];
-// شيك التقنين is not a choice: it is always shown and calculated from the area.
-const PAY_CHOICES = [['inst', 'الأقساط'], ['completion', 'دفعة الاستكمال']];
 
 const blank = () => ({
   zone: '', district: '', neighborhood: '', block: '', plot_number: '',
   area_orig: '', area_final: '', land_status: 0, facade: '', view_type: '', received: '',
-  over_amount: '', check_manual: '', payOn: {},
+  over_amount: '', check_manual: '',
   pay: { completion: '', completion_paid: false, completion_due: '', inst: { value: '', first: '', last: '' } },
   description: '', owner_name: '', contact_phone: '',
 });
@@ -35,7 +33,6 @@ function fromListing(x) {
     received: p.received || '',
     over_amount: x.over_amount || legacyOver || '',
     check_manual: p.check && checkByArea(area) == null ? p.check : '',
-    payOn: { check: !!p.check, waiver: !!p.waiver, completion: !!p.completion, inst: !!p.inst },
     pay: {
       completion: p.completion || '', completion_paid: !!p.completion_paid, completion_due: p.completion_due || '',
       inst: { value: p.inst?.value || '', first: p.inst?.first || '', last: p.inst?.last || '' },
@@ -55,13 +52,14 @@ function asListing(d) {
   pay.check = checkByArea(area) ?? (num(d.check_manual) || 0);
   pay.waiver = Math.round(area * WAIVER_PER_M);
   if (received && d.received) pay.received = d.received;
-  if (d.payOn.completion) {
+  // دفعة الاستكمال and الأقساط count once they have a value.
+  if (num(d.pay.completion) > 0) {
     const paid = !!d.pay.completion_paid && !NOT_ALLOCATED.includes(d.land_status);
     pay.completion = num(d.pay.completion) || 0;
     pay.completion_paid = paid;
     if (!paid && d.pay.completion_due) pay.completion_due = d.pay.completion_due;
   }
-  if (d.payOn.inst) {
+  if (num(d.pay.inst.value) > 0) {
     pay.inst = { value: num(d.pay.inst.value) || 0, count: INST_COUNT };
     if (received) { pay.inst.first = d.pay.inst.first || ''; pay.inst.last = d.pay.inst.last || ''; }
   }
@@ -85,11 +83,11 @@ function validate(step, d) {
   if (step === 1 && !d.land_status) return 'اختار حالة القطعة.';
   if (step === 1 && received && !d.received) return 'اختار تاريخ الاستلام (الشهر والسنة).';
   if (step === 3) {
-    if (d.payOn.inst && !(num(d.pay.inst.value) > 0)) return 'اكتب قيمة القسط.';
-    if (d.payOn.inst && received && (!d.pay.inst.first || !d.pay.inst.last)) return 'القطعة مستلمة: اختار موعد أول قسط وآخر قسط.';
-    if (d.payOn.inst && received && monthBefore(d.pay.inst.last, d.pay.inst.first)) return 'موعد آخر قسط لازم يكون بعد أول قسط.';
-    if (d.payOn.completion && !(num(d.pay.completion) > 0)) return 'اكتب قيمة دفعة الاستكمال.';
-    if (!(breakdown(asListing(d)).price > 0)) return 'اكتب الأوفر أو البنود المدفوعة، علشان السعر الكلي يتحسب.';
+    const inst = num(d.pay.inst.value) > 0;
+    if (String(d.over_amount).trim() === '') return 'اكتب الأوفر المطلوب.';
+    if (inst && received && (!d.pay.inst.first || !d.pay.inst.last)) return 'القطعة مستلمة: اختار موعد أول قسط وآخر قسط.';
+    if (inst && received && monthBefore(d.pay.inst.last, d.pay.inst.first)) return 'موعد آخر قسط لازم يكون بعد أول قسط.';
+    if (!(breakdown(asListing(d)).price > 0)) return 'السعر الكلي لازم يكون أكبر من صفر: راجع الأوفر والبنود.';
   }
   if (step === 4 && d.owner_name.trim().length < 2) return 'اكتب الاسم.';
   if (step === 4 && !PHONE_RE.test(normalizePhone(d.contact_phone))) return 'اكتب رقم موبايل مصري صح، زي 01012345678.';
@@ -119,6 +117,21 @@ function Auto({ label, value, empty, note, count, text, full, parts }) {
       )}
       {note && <span className="hint">{note}</span>}
     </div>
+  );
+}
+
+// One payment item: name, its amount, and where it goes (المطلوب دفعه / المتبقي).
+function PayItem({ title, amount, route, hint, children }) {
+  return (
+    <section className="pitem">
+      <header>
+        <b>{title}</b>
+        {route && <em className={`tag ${route}`}>{route === 'paid' ? 'في المطلوب دفعه' : 'في المتبقي'}</em>}
+        <span className="pi-amt">{amount ? <><i className="num">{money(amount)}</i> ج</> : '—'}</span>
+      </header>
+      {hint && <small className="pi-hint">{hint}</small>}
+      {children}
+    </section>
   );
 }
 
@@ -155,7 +168,6 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
   const set = (k, v) => setD((s) => ({ ...s, [k]: v }));
   const setPay = (k, v) => setD((s) => ({ ...s, pay: { ...s.pay, [k]: v } }));
   const setInst = (k, v) => setD((s) => ({ ...s, pay: { ...s.pay, inst: { ...s.pay.inst, [k]: v } } }));
-  const togglePay = (k) => setD((s) => ({ ...s, payOn: { ...s.payOn, [k]: !s.payOn[k] } }));
   const go = (n) => { setError(''); setStep(n); sheet.current?.scrollTo({ top: 0 }); };
 
   const b = breakdown(asListing(d));
@@ -164,18 +176,6 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
   const checkUnpaid = d.land_status === CHECK_UNPAID_STATUS;
   const notAllocated = NOT_ALLOCATED.includes(d.land_status);
   const checkTier = checkByArea(area);
-  const keep = (rows) => rows.filter(([, v]) => v > 0);
-  const paidParts = keep([
-    ['شيك التقنين', b.checkPaid ? b.check : 0],
-    ['دفعة الاستكمال', b.compPaid ? b.comp : 0],
-    ['الأقساط المدفوعة', b.inst?.paid || 0],
-  ]);
-  const remainingParts = keep([
-    ['شيك التقنين (غير مدفوع)', b.checkPaid ? 0 : b.check],
-    ['دفعة الاستكمال', b.comp && !b.compPaid ? b.comp : 0],
-    ['الأقساط المتبقية', b.inst?.left || 0],
-    ['مصاريف التنازل', b.waiver],
-  ]);
   const title = admin ? (editId ? `تعديل ${listingCode(editId)}` : 'إضافة إعلان') : 'اعرض قطعتك';
   const last = step === STEP_NAMES.length - 1;
 
@@ -255,74 +255,65 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
         )}
 
         {step === 3 && (
-          <div className="grid">
-            <Auto full label="السعر الكلي" value={b.price} note="المطلوب دفعه + الأوفر" />
-            <Auto full label="المطلوب دفعه (المبلغ الذي دفعته فعلياً + شيك التقنين)" value={b.paid}
-              empty="فضلا اختر البنود المدفوعة بالأسفل" parts={paidParts} />
-            <Money full id="w-over" label="الأوفر المطلوب (جنيه)" value={d.over_amount} onChange={(v) => set('over_amount', v)} />
-            <Auto full label="المتبقي" value={b.remaining} note="المطلوب دفعه ولكن لا يدفع (يدفعه المشتري لاحقاً)" parts={remainingParts} />
+          <div className="pay-step">
+            <Money id="w-over" label="الأوفر المطلوب (جنيه) · إجباري" value={d.over_amount} onChange={(v) => set('over_amount', v)} />
 
-            <div className="full paybox check-box">
-              {checkTier != null || !area
-                ? <Auto label="شيك التقنين" value={b.check} empty="اكتب المساحة في الخطوة التانية"
-                    note={checkTier != null ? `حسب المساحة: ${area} م²` : ''} />
-                : <Money id="w-check" label="شيك التقنين (المساحة خارج الشرايح، اكتب القيمة)" value={d.check_manual} onChange={(v) => set('check_manual', v)} />}
-              {!d.land_status
-                ? <p className="paynote">اختار الحالة في الخطوة التانية علشان يتحدد الشيك يتضاف فين.</p>
-                : <p className={`paynote route ${checkUnpaid ? 'to-rem' : 'to-paid'}`}>{checkUnpaid
-                  ? 'الحالة "غير مدفوع الشيك" ← الشيك اتضاف تلقائياً في خانة المتبقي.'
-                  : 'الشيك مدفوع ← اتضاف تلقائياً في خانة المطلوب دفعه.'}</p>}
+            <div className="ptotals" aria-live="polite">
+              <div className="pt hero-t"><span>السعر الكلي <small>تلقائي</small></span><b><i className="num">{money(b.price)}</i> ج</b><small>المطلوب دفعه + الأوفر</small></div>
+              <div className="pt paid-t"><span>المطلوب دفعه <small>تلقائي</small></span>
+                {b.paid ? <b><i className="num">{money(b.paid)}</i> ج</b> : <b className="none">—</b>}
+                <small>المبلغ الذي دفعته فعلياً + شيك التقنين</small></div>
+              <div className="pt"><span>الأوفر</span><b><i className="num">{money(b.over)}</i> ج</b><small>اللي البائع عايزه فوق المدفوع</small></div>
+              <div className="pt rem-t"><span>المتبقي <small>تلقائي</small></span><b><i className="num">{money(b.remaining)}</i> ج</b>
+                <small>المطلوب دفعه ولكن لا يدفع (يدفعه المشتري لاحقاً)</small></div>
             </div>
 
-            <div className="full paybox">
-              <Auto label="مصاريف التنازل" value={b.waiver} empty="اكتب المساحة في الخطوة التانية"
-                note={area ? `${WAIVER_PER_M} ج × ${area} م²` : `${WAIVER_PER_M} ج × المساحة بعد التقنين`} />
-              <p className="paynote route to-rem">مصاريف التنازل ← اتضافت تلقائياً في خانة المتبقي.</p>
-            </div>
+            <h4 className="pay-h">البنود</h4>
 
-            <div className="field full"><span className="lbl sec-lbl">بنود تانية (اختار اللي يخصك)</span>
-              <div className="chips toggle">
-                {PAY_CHOICES.map(([k, t]) => <button key={k} type="button" aria-pressed={!!d.payOn[k]} onClick={() => togglePay(k)}>{t}</button>)}
-              </div></div>
+            <PayItem title="شيك التقنين" amount={b.check} route={d.land_status ? (checkUnpaid ? 'rem' : 'paid') : ''}
+              hint={checkTier != null ? `حسب المساحة ${area} م²` : ''}>
+              {!area && <p className="pi-note">اكتب المساحة في الخطوة التانية والشيك هيتحسب لوحده.</p>}
+              {area > 0 && checkTier == null && (
+                <Money id="w-check" label="المساحة خارج الشرايح، اكتب قيمة الشيك" value={d.check_manual} onChange={(v) => set('check_manual', v)} />
+              )}
+              {!d.land_status && <p className="pi-note">اختار الحالة علشان يتحدد الشيك يتضاف فين.</p>}
+            </PayItem>
 
+            <PayItem title="مصاريف التنازل" amount={b.waiver} route={b.waiver ? 'rem' : ''}
+              hint={area ? `${WAIVER_PER_M} ج × ${area} م²` : ''}>
+              {!area && <p className="pi-note">بتتحسب لوحدها من المساحة.</p>}
+            </PayItem>
 
-            {d.payOn.completion && (
-              <div className="full paybox">
-                <h4>دفعة الاستكمال</h4>
-                <div className="grid">
-                  <Money full id="w-comp" label="قيمة الاستكمال (جنيه)" value={d.pay.completion} onChange={(v) => setPay('completion', v)} />
-                  {notAllocated
-                    ? <p className="paynote full">القطعة لسه مش مخصصة، فالاستكمال بيتضاف على المتبقي.</p>
-                    : <label className="chk full"><input type="checkbox" checked={!!d.pay.completion_paid} onChange={(e) => setPay('completion_paid', e.target.checked)} /> دفعت الاستكمال</label>}
-                  {(notAllocated || !d.pay.completion_paid) && (
-                    <Month id="w-compdue" label="موعد الاستكمال" value={d.pay.completion_due} onChange={(v) => setPay('completion_due', v)} />
-                  )}
-                </div>
-                <p className="paynote">{b.compPaid ? 'بتتضاف على المطلوب دفعه.' : 'بتتضاف على المتبقي.'}</p>
+            <PayItem title="دفعة الاستكمال" amount={b.comp || null} route={b.comp ? (b.compPaid ? 'paid' : 'rem') : ''} hint="سيبها فاضية لو مفيش">
+              <div className="grid">
+                <Money id="w-comp" label="قيمة الاستكمال (جنيه)" value={d.pay.completion} onChange={(v) => setPay('completion', v)} />
+                {notAllocated
+                  ? <p className="pi-note">القطعة لسه مش مخصصة، فالاستكمال بيروح للمتبقي.</p>
+                  : <label className="chk"><input type="checkbox" checked={!!d.pay.completion_paid} onChange={(e) => setPay('completion_paid', e.target.checked)} /> دفعت الاستكمال</label>}
+                {(notAllocated || !d.pay.completion_paid) && (
+                  <Month id="w-compdue" label="موعد الاستكمال" value={d.pay.completion_due} onChange={(v) => setPay('completion_due', v)} />
+                )}
               </div>
-            )}
+            </PayItem>
 
-            {d.payOn.inst && (
-              <div className="full paybox">
-                <h4>الأقساط المدفوعة / المتبقية</h4>
-                <div className="grid">
-                  <Money id="w-iv" label="قيمة القسط" value={d.pay.inst.value} onChange={(v) => setInst('value', v)} />
-                  <div className="field"><label htmlFor="w-ic">عدد الأقساط</label>
-                    <input id="w-ic" disabled value={INST_COUNT} readOnly /></div>
-                  <Month id="w-if" label={`موعد أول قسط${received ? ' (إجباري)' : ''}`} value={d.pay.inst.first} onChange={(v) => setInst('first', v)}
-                    disabled={!received} placeholder="يحدد بعد الاستلام" />
-                  <Month id="w-il2" label={`موعد آخر قسط${received ? ' (إجباري)' : ''}`} value={d.pay.inst.last} onChange={(v) => setInst('last', v)}
-                    disabled={!received} placeholder="يحدد بعد الاستلام" />
-                  <Auto count label="عدد الأقساط المدفوعة" value={b.inst?.paidN ?? 0} />
-                  <Auto label="إجمالي الأقساط المدفوعة" value={b.inst?.paid} />
-                  <Auto count label="عدد الأقساط المتبقية" value={b.inst?.leftN ?? INST_COUNT} />
-                  <Auto label="إجمالي الأقساط المتبقية" value={b.inst?.left} />
-                </div>
-                <p className="paynote">{received
-                  ? 'الأقساط اللي عدّى ميعادها بتتضاف على المطلوب دفعه، والباقي على المتبقي.'
-                  : 'القطعة مش مستلمة، فإجمالي الأقساط كله بيتضاف على المتبقي.'}</p>
+            <PayItem title="الأقساط" amount={b.inst ? b.inst.value * INST_COUNT : null} hint="سيبها فاضية لو مفيش أقساط">
+              <div className="grid">
+                <Money id="w-iv" label="قيمة القسط" value={d.pay.inst.value} onChange={(v) => setInst('value', v)} />
+                <div className="field"><label htmlFor="w-ic">عدد الأقساط</label>
+                  <input id="w-ic" disabled value={INST_COUNT} readOnly /></div>
+                <Month id="w-if" label={`موعد أول قسط${received ? ' · إجباري' : ''}`} value={d.pay.inst.first} onChange={(v) => setInst('first', v)}
+                  disabled={!received} placeholder="يحدد بعد الاستلام" />
+                <Month id="w-il2" label={`موعد آخر قسط${received ? ' · إجباري' : ''}`} value={d.pay.inst.last} onChange={(v) => setInst('last', v)}
+                  disabled={!received} placeholder="يحدد بعد الاستلام" />
               </div>
-            )}
+              {b.inst && (
+                <div className="inst-split">
+                  <div className="paid-t"><span>مدفوعة <small>تلقائي</small></span><b><i className="num">{b.inst.paidN}</i> قسط · <i className="num">{money(b.inst.paid)}</i> ج</b></div>
+                  <div className="rem-t"><span>متبقية <small>تلقائي</small></span><b><i className="num">{b.inst.leftN}</i> قسط · <i className="num">{money(b.inst.left)}</i> ج</b></div>
+                </div>
+              )}
+              {b.inst && !received && <p className="pi-note">القطعة مش مستلمة، فالأقساط كلها بتروح للمتبقي.</p>}
+            </PayItem>
           </div>
         )}
 
@@ -345,7 +336,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                 <dt>المطلوب دفعه</dt><dd className="num">{money(b.paid)} ج</dd>
                 <dt>الأوفر</dt><dd className="num">{money(b.over)} ج</dd>
                 <dt>المتبقي</dt><dd className="num">{money(b.remaining)} ج</dd>
-                <dt>شيك التقنين</dt><dd><span className="num">{money(b.check)} ج</span> · {b.checkPaid ? 'مدفوع (في المطلوب دفعه)' : 'غير مدفوع (في المتبقي)'}</dd>
+                {b.check > 0 && (<><dt>شيك التقنين</dt><dd><span className="num">{money(b.check)} ج</span> · {b.checkPaid ? 'مدفوع (في المطلوب دفعه)' : 'غير مدفوع (في المتبقي)'}</dd></>)}
                 <dt>مصاريف التنازل</dt><dd><span className="num">{money(b.waiver)} ج</span> · في المتبقي</dd>
                 {b.comp > 0 && (<><dt>دفعة الاستكمال</dt><dd><span className="num">{money(b.comp)} ج</span> · {b.compPaid ? 'مدفوعة (في المطلوب دفعه)' : 'في المتبقي'}</dd></>)}
                 {b.inst && (<><dt>الأقساط</dt><dd><span className="num">{b.inst.paidN}</span> مدفوع · <span className="num">{b.inst.leftN}</span> متبقي</dd></>)}
