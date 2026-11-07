@@ -537,21 +537,18 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             </PayItem>
 
             <PayItem title="دفعة الاستكمال" amount={b.comp || null} route={b.comp ? (b.compPaid ? 'paid' : 'rem') : ''} hint={c ? 'بتتدفع بالفيزا' : 'سيبها فاضية لو مفيش'}>
-              <div className="grid">
                 <Money id="w-comp" label="قيمة الاستكمال (جنيه)" tag={tag('completion')}
                   value={c && !d.manual?.completion ? e.completion : d.pay.completion}
                   onChange={(v) => edit('completion', (s) => ({ ...s, pay: { ...s.pay, completion: v } }))} />
-                {(d.land_status >= COMPLETED_STATUS || !d.land_status) && <p className="pi-note full">{d.land_status >= COMPLETED_STATUS
+                {(d.land_status >= COMPLETED_STATUS || !d.land_status) && <p className="pi-note">{d.land_status >= COMPLETED_STATUS
                   ? 'القطعة مستكملة، فالاستكمال اتدفع وبيروح للمطلوب دفعه.'
                   : 'اختار الحالة علشان يتحدد الاستكمال مدفوع ولا لأ.'}</p>}
                 {d.land_status < COMPLETED_STATUS && (
                   <Month id="w-compdue" clearable label="موعد الاستكمال" value={d.pay.completion_due} onChange={(v) => setPay('completion_due', v)} />
                 )}
-              </div>
             </PayItem>
 
             <PayItem title="الأقساط" amount={b.inst ? b.inst.value * INST_COUNT : null} route={b.inst ? (b.inst.leftN > 0 ? 'rem' : 'paid') : ''} hint={c ? '3 أقساط' : 'سيبها فاضية لو مفيش أقساط'}>
-              <div className="grid">
                 <Money id="w-iv" label="قيمة القسط" tag={tag('inst')}
                   value={c && !d.manual?.inst ? e.instValue : d.pay.inst.value}
                   onChange={(v) => edit('inst', (s) => ({ ...s, pay: { ...s.pay, inst: { ...s.pay.inst, value: v } } }))} />
@@ -561,7 +558,6 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                   disabled={!received} placeholder="يحدد بعد الاستلام" />
                 <Month id="w-il2" label={`موعد آخر قسط${received ? ' · إجباري' : ''}`} value={d.pay.inst.last} onChange={(v) => setInst('last', v)}
                   disabled={!received} placeholder="يحدد بعد الاستلام" />
-              </div>
               {b.inst && (
                 <div className="inst-split">
                   <div className="paid-t"><span>مدفوعة</span><b><i className="num">{b.inst.paidN}</i> قسط · <i className="num">{money(b.inst.paid)}</i> ج.م</b></div>

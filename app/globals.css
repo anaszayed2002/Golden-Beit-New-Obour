@@ -1047,3 +1047,13 @@ table.cmp td { text-align: center; min-width: 8em; }
 .ptotals.mirror.compact .pt.hero-t b { font-size: 22px; }
 .ptotals.mirror.compact .pt b { font-size: 18px; }
 .ptotals.compact .pt-lbl, .ptotals.compact .hero-t > span { font-size: 12.5px; }
+/* v27: every sub-field inside an item branches from it (nested tree) */
+.pi-body::before { display: none; }
+.pi-body { display: flex; flex-direction: column; gap: 12px; padding-inline-start: 22px; margin-top: 2px; }
+.pi-body > * { position: relative; margin: 0; }
+.pi-body > *::before { content: ''; position: absolute; inset-inline-start: -16px; top: -12px; width: 13px; height: 32px;
+  border: 0 solid #a9bcb2; border-inline-start-width: 2px; border-bottom-width: 2px; border-end-start-radius: 12px; pointer-events: none; }
+.pi-body > *:not(:last-child)::after { content: ''; position: absolute; inset-inline-start: -16px; top: -12px; bottom: 0; border-inline-start: 2px solid #a9bcb2; pointer-events: none; }
+.pi-body > .field { display: flex; flex-direction: column; gap: 6px; }
+.pi-body > .inst-split::before { height: 30px; }
+.pi-body > *::before, .pi-body > *:not(:last-child)::after { border-color: #8fa89c; }
