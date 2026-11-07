@@ -252,12 +252,12 @@ function AutoTag({ manual, onReset, hasCalc }) {
 }
 
 // One payment item: name, its amount, and where it goes (المطلوب دفعه / المتبقي).
-function PayItem({ title, amount, route, hint, children }) {
+function PayItem({ title, amount, route, remLabel = 'المتبقي', hint, children }) {
   return (
     <section className={`pitem branch tone-${route || 'none'}`}>
       <header>
         <b>{title}</b>
-        {route && <em className={`tag ${route}`}>{route === 'paid' ? 'المطلوب دفعه' : 'المتبقي'}</em>}
+        {route && <em className={`tag ${route}`}>{route === 'paid' ? 'المطلوب دفعه' : remLabel}</em>}
         <span className="pi-amt">{amount ? <><i className="num">{money(amount)}</i> ج.م</> : '—'}</span>
       </header>
       {hint && <small className="pi-hint">{hint}</small>}
@@ -523,7 +523,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               </div>
             </PayItem>
 
-            <PayItem title="الأقساط" amount={b.inst ? b.inst.value * INST_COUNT : null} route={b.inst ? (b.inst.leftN > 0 ? 'rem' : 'paid') : ''} hint={c ? '3 أقساط' : 'سيبها فاضية لو مفيش أقساط'}>
+            <PayItem title="الأقساط" remLabel="متبقي" amount={b.inst ? b.inst.value * INST_COUNT : null} route={b.inst ? (b.inst.leftN > 0 ? 'rem' : 'paid') : ''} hint={c ? '3 أقساط' : 'سيبها فاضية لو مفيش أقساط'}>
               <div className="grid">
                 <Money id="w-iv" label="قيمة القسط" tag={tag('inst')}
                   value={c && !d.manual?.inst ? e.instValue : d.pay.inst.value}
