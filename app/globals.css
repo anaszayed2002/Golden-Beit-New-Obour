@@ -865,3 +865,25 @@ table.cmp td { text-align: center; min-width: 8em; }
 .pt-over { margin-top: 4px; padding: 3px 9px; }
 .price-seal { top: 64%; }
 .pt-tree .branch::before, .pt-tree .branch:not(:last-child)::after { border-color: #aabfb4; }
+
+/* v17: note on top of the frozen block, bigger boxes, over on the left inside paid */
+.pt-note { margin: 0; padding: 8px 10px; border-radius: 12px; background: #fbf4e1; border: 1.5px solid #e6c46a; color: var(--forest);
+  font-weight: 700; font-size: clamp(10.5px, 2.95vw, 14px); line-height: 1.7; text-align: center; display: flex; flex-direction: column; }
+.pt-note span { white-space: nowrap; }
+.ptotals.mirror { gap: 8px; padding: 8px 8px 10px; }
+.ptotals.mirror .pt { padding: 12px 14px; border-radius: 16px; }
+.ptotals.mirror .pt.hero-t { padding: 12px 14px; }
+.ptotals.mirror .pt.hero-t b { font-size: 28px; }
+.ptotals.mirror .pt > small, .paid-main > small { font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+.pt-lbl { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
+.pt-lbl small { font-size: 10.5px; background: #fff; border-radius: 99px; padding: 0 7px; color: var(--muted); }
+.ptotals.mirror .pt b { font-size: 22px; }
+.paid-split { display: grid !important; grid-template-columns: 1fr auto; gap: 10px; align-items: stretch; }
+.paid-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pt-over { margin: 0; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 8px 12px; border-radius: 12px; min-width: 128px; }
+.pt-over > span { font-size: 12px; color: var(--gold-ink); }
+.ptotals.mirror .pt-over b { font-size: 17px; color: var(--forest); }
+.pt-over u { font-size: 11.5px; }
+.pt-tree { gap: 8px; padding-inline-start: 20px; }
+.pt-tree .branch::before { inset-inline-start: -15px; top: -8px; width: 15px; height: 30px; border-color: #9fb5aa; border-inline-start-width: 2px; border-bottom-width: 2px; border-end-start-radius: 14px; }
+.pt-tree .branch:not(:last-child)::after { inset-inline-start: -15px; top: -8px; bottom: -8px; border-color: #9fb5aa; }

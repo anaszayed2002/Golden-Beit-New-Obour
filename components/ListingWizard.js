@@ -7,7 +7,7 @@ import {
   breakdown, checkFor, legalCalc, LEGAL, addYears, fmtMonth, monthBefore,
 } from '@/lib/site';
 import SheetTop from './SheetTop';
-import { PriceSeal } from './LegalCalc';
+import { PRICE_NOTE } from '@/lib/site';
 import { uploadPhoto, photoUrl } from '@/lib/supabase';
 
 const STEP_NAMES = ['المكان', 'المساحة والحالة', 'المميزات والصورة', 'السعر والدفع', 'البيانات'];
@@ -386,23 +386,28 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
         {step === 3 && (
           <div className="pay-step">
             <div className="ptotals mirror" aria-live="polite">
+              <p className="pt-note" role="note">{PRICE_NOTE.split('، ').map((t, i, all) => <span key={i}>{t}{i < all.length - 1 ? '،' : ''}</span>)}</p>
               <div className="pt hero-t">
                 <span>السعر الكلي <small>تلقائي</small></span>
                 <b><i className="num">{money(b.price)}</i> ج</b>
                 <small>المطلوب دفعه (شامل الأوفر) + المتبقي</small>
               </div>
               <div className="pt-tree">
-                <div className="pt paid-t branch">
-                  <div className="pt-row"><span>المطلوب دفعه <small>تلقائي</small></span>
-                    {b.paid ? <b><i className="num">{money(b.paid)}</i> ج</b> : <b className="none">—</b>}</div>
-                  <small>الأوفر المطلوب + كل اللي دفعته</small>
+                <div className="pt paid-t branch paid-split">
+                  <div className="paid-main">
+                    <span className="pt-lbl">المطلوب دفعه <small>تلقائي</small></span>
+                    {b.paid ? <b><i className="num">{money(b.paid)}</i> ج</b> : <b className="none">—</b>}
+                    <small>الأوفر المطلوب + كل اللي دفعته</small>
+                  </div>
                   <button type="button" className="pt-over" onClick={() => { const el = document.getElementById('w-over'); el?.focus(); el?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }}>
-                    <span>الأوفر <b className="num">{money(b.over)}</b> ج</span>
+                    <span>الأوفر</span>
+                    <b><i className="num">{money(b.over)}</i> ج</b>
                     <u>اضغط لكتابة الأوفر المطلوب</u>
                   </button>
                 </div>
                 <div className="pt rem-t branch">
-                  <div className="pt-row"><span>المتبقي <small>تلقائي</small></span><b><i className="num">{money(b.remaining)}</i> ج</b></div>
+                  <span className="pt-lbl">المتبقي <small>تلقائي</small></span>
+                  <b><i className="num">{money(b.remaining)}</i> ج</b>
                   <small>يدفعه المشتري لاحقاً (المتبقي من الاستكمال والأقساط، والشيك لو لم يتم دفعه)</small>
                 </div>
               </div>
@@ -411,7 +416,6 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             {!c && (
               <p className="calc-off">الحساب التلقائي بيشتغل لما تكتب <b>أصل المساحة</b> (من {LEGAL.minArea} لأقل من {LEGAL.autoBelow} م²) في الخطوة التانية. غير كده اكتب الأرقام بنفسك.</p>
             )}
-            <PriceSeal />
             <div className="over-box">
               <label htmlFor="w-over">الأوفر المطلوب <em>إجباري</em></label>
               <p>المبلغ اللي عايزه فوق المدفوع، بالجنيه.</p>
