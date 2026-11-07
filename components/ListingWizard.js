@@ -130,13 +130,13 @@ function Chips({ options, value, onPick }) {
 // A box the form fills by itself. count: show a plain number instead of an amount.
 // parts: [label, amount] rows showing what the total is made of.
 function Auto({ label, value, empty, note, count, text, full, parts }) {
-  const shown = text ?? (count ? (value === '' || value == null ? '' : String(value)) : value ? <><span className="num">{money(value)}</span> ج</> : '');
+  const shown = text ?? (count ? (value === '' || value == null ? '' : String(value)) : value ? <><span className="num">{money(value)}</span> ج.م</> : '');
   return (
     <div className={`field${full ? ' full' : ''}`}>
       <span className="lbl">{label} <small className="auto-tag">(يحدد تلقائيا)</small></span>
-      <div className={`autobox${shown ? '' : ' empty'}`}>{shown || empty || (count ? '0' : '0 ج')}</div>
+      <div className={`autobox${shown ? '' : ' empty'}`}>{shown || empty || (count ? '0' : '0 ج.م')}</div>
       {parts?.length > 0 && (
-        <ul className="parts">{parts.map(([k, v]) => <li key={k}><span>{k}</span><b className="num">{money(v)} ج</b></li>)}</ul>
+        <ul className="parts">{parts.map(([k, v]) => <li key={k}><span>{k}</span><b className="num">{money(v)} ج.م</b></li>)}</ul>
       )}
       {note && <span className="hint">{note}</span>}
     </div>
@@ -214,7 +214,7 @@ function PayItem({ title, amount, route, hint, children }) {
       <header>
         <b>{title}</b>
         {route && <em className={`tag ${route}`}>{route === 'paid' ? 'المطلوب دفعه' : 'المتبقي'}</em>}
-        <span className="pi-amt">{amount ? <><i className="num">{money(amount)}</i> ج</> : '—'}</span>
+        <span className="pi-amt">{amount ? <><i className="num">{money(amount)}</i> ج.م</> : '—'}</span>
       </header>
       {hint && <small className="pi-hint">{hint}</small>}
       {children && <div className="pi-body">{children}</div>}
@@ -227,7 +227,7 @@ function Money({ id, label, value, onChange, full, tag }) {
     <div className={`field${full ? ' full' : ''}`}>
       <label htmlFor={id}>{label} {tag}</label>
       <input id={id} type="number" inputMode="decimal" min="0" value={value} onFocus={(e) => e.target.select()} onChange={(e) => onChange(e.target.value)} />
-      <span className="hint num">{value ? `${money(num(value))} ج` : ''}</span>
+      <span className="hint num">{value ? `${money(num(value))} ج.م` : ''}</span>
     </div>
   );
 }
@@ -396,14 +396,14 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             <div className="ptotals mirror" aria-live="polite">
               <div className="pt hero-t">
                 <span>السعر الكلي <small>تلقائي</small></span>
-                <b><i className="num">{money(b.price)}</i> ج</b>
+                <b><i className="num">{money(b.price)}</i> ج.م</b>
                 <small>المطلوب دفعه (شامل الأوفر) + المتبقي</small>
               </div>
               <div className="pt-tree">
                 <div className="pt paid-t branch paid-split">
                   <div className="paid-main">
                     <span className="pt-lbl">المطلوب دفعه <small>تلقائي</small></span>
-                    {b.paid ? <b><i className="num">{money(b.paid)}</i> ج</b> : <b className="none">—</b>}
+                    {b.paid ? <b><i className="num">{money(b.paid)}</i> ج.م</b> : <b className="none">—</b>}
                     <small>الأوفر المطلوب + كل اللي دفعته</small>
                   </div>
                   <label className="pt-over" htmlFor="w-over">
@@ -411,9 +411,9 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                     <span className="pt-over-in">
                       <input id="w-over" type="number" inputMode="numeric" min="0" placeholder="اكتب هنا" value={d.over_amount}
                         onFocus={(e) => e.target.select()} onChange={(e) => set('over_amount', e.target.value)} />
-                      <i>ج</i>
+                      <i>ج.م</i>
                     </span>
-                    <u>{d.over_amount !== '' ? <><b className="num">{money(num(d.over_amount))}</b> ج</> : 'اضغط لكتابة الأوفر المطلوب'}</u>
+                    <u>{d.over_amount !== '' ? <><b className="num">{money(num(d.over_amount))}</b> ج.م</> : 'اضغط لكتابة الأوفر المطلوب'}</u>
                   </label>
                 </div>
                 <div className="pt rem-t branch">
@@ -423,7 +423,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                   </button>
                   <span className="pt-lbl">المتبقي <small>تلقائي</small></span>
-                  <b><i className="num">{money(b.remaining)}</i> ج</b>
+                  <b><i className="num">{money(b.remaining)}</i> ج.م</b>
                   <small>يدفعه المشتري لاحقاً (المتبقي من الاستكمال والأقساط، والشيك لو لم يتم دفعه)</small>
                 </div>
               </div>
@@ -477,8 +477,8 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               </div>
               {b.inst && (
                 <div className="inst-split">
-                  <div className="paid-t"><span>مدفوعة</span><b><i className="num">{b.inst.paidN}</i> قسط · <i className="num">{money(b.inst.paid)}</i> ج</b></div>
-                  <div className="rem-t"><span>متبقية</span><b><i className="num">{b.inst.leftN}</i> قسط · <i className="num">{money(b.inst.left)}</i> ج</b></div>
+                  <div className="paid-t"><span>مدفوعة</span><b><i className="num">{b.inst.paidN}</i> قسط · <i className="num">{money(b.inst.paid)}</i> ج.م</b></div>
+                  <div className="rem-t"><span>متبقية</span><b><i className="num">{b.inst.leftN}</i> قسط · <i className="num">{money(b.inst.left)}</i> ج.م</b></div>
                 </div>
               )}
               {b.inst && !received && <p className="pi-note">أول قسط يتم دفعه بعد سنة من موعد الاستكمال.</p>}
@@ -503,7 +503,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                 <dt>المكان</dt><dd>{[SITE.governorate, d.zone, d.district, d.neighborhood].filter(Boolean).join(' · ')}</dd>
                 <dt>المساحة</dt><dd><span className="num">{area}</span> م²{num(d.area_orig) && num(d.area_orig) !== area ? <small className="muted"> (أصلها <span className="num">{num(d.area_orig)}</span> م²)</small> : null}</dd>
                 <dt>الحالة</dt><dd>{statusLabel(d.land_status)}</dd>
-                <dt>إجمالي المتبقي</dt><dd><b className="num">{money(b.remaining)} ج</b>
+                <dt>إجمالي المتبقي</dt><dd><b className="num">{money(b.remaining)} ج.م</b>
                   {remItems.length > 0 && <ul className="rem-items">{remItems.map((t) => <li key={t}>{t}</li>)}</ul>}</dd>
               </dl></div>
           </div>

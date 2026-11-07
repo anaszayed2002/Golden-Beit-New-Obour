@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { LEGAL, PRICE_NOTE, legalCalc, exact, toEnglishDigits } from '@/lib/site';
 import SheetTop from './SheetTop';
 
-const j = (n) => <><b className="num">{exact(n)}</b> ج</>;
+const j = (n) => <><b className="num">{exact(n)}</b> ج.م</>;
 const m2 = (n) => <><b className="num">{exact(n)}</b> م²</>;
 
 // The legalization cost explained step by step, in the words a broker would use with a client.

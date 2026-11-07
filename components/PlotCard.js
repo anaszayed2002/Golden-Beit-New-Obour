@@ -33,7 +33,7 @@ export default function PlotCard({ x, onClose }) {
     ['المجاورة', x.neighborhood],
     ['المساحة', <><span className="num">{areaOf(x)}</span> م²</>],
     ['الخدمات', services],
-    ['الأوفر', Number(x.over_amount) > 0 ? <><span className="num">{money(x.over_amount)}</span> ج</> : ''],
+    ['الأوفر', Number(x.over_amount) > 0 ? <><span className="num">{money(x.over_amount)}</span> ج.م</> : ''],
   ].filter(([, v]) => v);
   const msg = `السلام عليكم، أنا مهتم بالقطعة كود ${listingCode(x)}: ${placeOf(x)}، ${areaOf(x)} م²، السعر ${money(x.price)} جنيه.`;
   return (
@@ -44,7 +44,7 @@ export default function PlotCard({ x, onClose }) {
           {x.photo ? <img className="pc-photo" src={photoUrl(x.photo)} alt={`صورة القطعة ${listingCode(x)}`} /> : <Sketch x={x} />}
           <dl>
             {rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
-            <div className="pc-price"><dt>السعر الكلي</dt><dd><span className="num">{money(x.price)}</span> ج</dd></div>
+            <div className="pc-price"><dt>السعر الكلي</dt><dd><span className="num">{money(x.price)}</span> ج.م</dd></div>
           </dl>
           <footer>
             <div className="pc-brand">

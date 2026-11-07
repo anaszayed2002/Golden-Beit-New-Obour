@@ -11,7 +11,7 @@ import PlotCard from './PlotCard';
 import Compare from './Compare';
 
 // "—" instead of a misleading 0 when a listing has no paid/over amount.
-const Amount = ({ x, value, className, unit = 'ج' }) => (hasPayment(x)
+const Amount = ({ x, value, className, unit = 'ج.م' }) => (hasPayment(x)
   ? <span className={className}><span className="num">{money(value)}</span><span className="cur">{unit}</span></span>
   : <span className="muted">—</span>);
 import { useToast, useBodyLock, useEscape } from './hooks';
@@ -241,7 +241,7 @@ export default function Market() {
             </select></div>
           <StopRange id="f-area" label="المساحة بعد التقنين (م²)" unit="م²" stops={AREA_STOPS} labels={AREA_LABELS}
             min={filters.amin} max={filters.amax} onChange={setRange('amin', 'amax')} />
-          <StopRange id="f-price" label="السعر الكلي (جنيه)" unit="ج" stops={PRICE_STOPS} labels={PRICE_LABELS}
+          <StopRange id="f-price" label="السعر الكلي (جنيه)" unit="ج.م" stops={PRICE_STOPS} labels={PRICE_LABELS}
             min={filters.pmin} max={filters.pmax} onChange={setRange('pmin', 'pmax')} />
           {[['paid', 'المطلوب دفعه لحد', 'أقصى مبلغ'], ['over', 'الأوفر لحد', 'أقصى مبلغ'], ['rem', 'المتبقي لحد', 'أقصى مبلغ'],
             ['ival', 'قيمة القسط لحد', 'أقصى قسط'], ['ileft', 'عدد الأقساط المتبقية لحد', 'أقصى عدد']].map(([k, t, ph]) => (
@@ -287,9 +287,9 @@ export default function Market() {
                       {(x.district || x.neighborhood) && <small>{[x.district, x.neighborhood].filter(Boolean).join(' · ')}</small>}</td>
                     <td><span className="num">{areaOf(x)}</span> م²</td>
                     <td>{x.land_status ? <span className={`pill ${x.land_status === RECEIVED_STATUS ? 'got' : 'st'}`}>{statusLabel(x.land_status)}</span> : <span className="muted">—</span>}</td>
-                    <td className="price"><span className="num">{money(x.price)}</span><span className="cur">ج</span></td>
+                    <td className="price"><span className="num">{money(x.price)}</span><span className="cur">ج.م</span></td>
                     <td><Amount x={x} value={x.paid} className="paid" /></td>
-                    <td>{remainingOf(x) > 0 ? <span className="rem"><span className="num">{money(remainingOf(x))}</span><span className="cur">ج</span></span> : <span className="muted">—</span>}</td>
+                    <td>{remainingOf(x) > 0 ? <span className="rem"><span className="num">{money(remainingOf(x))}</span><span className="cur">ج.م</span></span> : <span className="muted">—</span>}</td>
                     <td className="more-cell" onClick={(e) => e.stopPropagation()}>
                       <div className="t-acts">
                         <button className="ic-btn" title="عرض كبطاقة" aria-label={`عرض ${listingCode(x)} كبطاقة`} onClick={() => setCardOf(x)}><CardIcon /></button>
@@ -434,10 +434,10 @@ function Drawer({ item: x, zone, onClose, onCard, inCompare, onCompare }) {
           <button className="btn soft" aria-pressed={inCompare} onClick={onCompare}><CompareIcon /> {inCompare ? 'مضافة للمقارنة' : 'أضف للمقارنة'}</button>
         </div>
         <div className="money">
-          <div className="big"><label>السعر الكلي</label><strong><span className="num">{money(x.price)}</span> ج</strong></div>
-          {hasPayment(x) && <div><label>المطلوب دفعه</label><strong><span className="num">{money(x.paid)}</span> ج</strong></div>}
-          {Number(x.over_amount) > 0 && hasPayment(x) && <div><label>الأوفر</label><strong><span className="num">{money(x.over_amount)}</span> ج</strong></div>}
-          {remainingOf(x) > 0 && <div><label>المتبقي</label><strong><span className="num">{money(remainingOf(x))}</span> ج</strong></div>}
+          <div className="big"><label>السعر الكلي</label><strong><span className="num">{money(x.price)}</span> ج.م</strong></div>
+          {hasPayment(x) && <div><label>المطلوب دفعه</label><strong><span className="num">{money(x.paid)}</span> ج.م</strong></div>}
+          {Number(x.over_amount) > 0 && hasPayment(x) && <div><label>الأوفر</label><strong><span className="num">{money(x.over_amount)}</span> ج.م</strong></div>}
+          {remainingOf(x) > 0 && <div><label>المتبقي</label><strong><span className="num">{money(remainingOf(x))}</span> ج.م</strong></div>}
         </div>
         <div className="sec-title">بيانات القطعة</div>
         <dl className="kv">

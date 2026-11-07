@@ -4,7 +4,7 @@ import { money, listingCode, areaOf, placeOf, statusLabel, remainingOf, hasPayme
 import SheetTop from './SheetTop';
 
 const ZOOMS = [0.7, 0.85, 1, 1.15, 1.3, 1.5];
-const m = (v) => (v ? <><span className="num">{money(v)}</span> ج</> : '—');
+const m = (v) => (v ? <><span className="num">{money(v)}</span> ج.م</> : '—');
 
 // Each unit is one column (details as rows); the table scrolls both ways and can be zoomed in or out.
 const COLS = [

@@ -212,7 +212,7 @@ export default function Admin() {
                       </div>
                       <dl className="akv">
                         <dt>تليفونه</dt><dd><Phone value={r.phone} /></dd>
-                        <dt>القطعة</dt><dd>{[r.zone, r.district].filter(Boolean).join(' · ')} · <span className="num">{Number(r.area)}</span> م² · <span className="num">{money(r.price)}</span> ج</dd>
+                        <dt>القطعة</dt><dd>{[r.zone, r.district].filter(Boolean).join(' · ')} · <span className="num">{Number(r.area)}</span> م² · <span className="num">{money(r.price)}</span> ج.م</dd>
                         <dt>البلوك / القطعة</dt><dd className="num">{r.block || '—'} / {r.plot_number || 'لسه متخصصتش'}</dd>
                         <dt>صاحب القطعة</dt><dd>{r.owner_name || '—'}</dd>
                         <dt>تليفون صاحبها</dt><dd><Phone value={r.contact_phone} /></dd>
