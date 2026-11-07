@@ -55,7 +55,7 @@ function eff(d) {
   const auto = (k) => calc && !d.manual?.[k];
   // With a calculation the slider picks the tier; without one the area after legalization is optional.
   const area_final = calc ? calc.tier : (num(d.area_final) || a || 0);
-  const check = d.manual?.check || checkFor(a) == null ? (num(d.check_manual) || 0) : checkFor(a);
+  const check = checkFor(a) == null ? (num(d.check_manual) || 0) : checkFor(a);
   return {
     calc, area_final, check,
     completion: auto('completion') ? calc.completion : (num(d.pay.completion) || 0),
@@ -204,22 +204,20 @@ function TierSlider({ value, suggested, onChange, onClear }) {
 // Shows whether a value comes from the calculation, with a way back to it after an edit.
 function AutoTag({ manual, onReset, hasCalc }) {
   if (!hasCalc) return null;
-  return manual
-    ? <button type="button" className="auto-reset" onClick={onReset}>معدّل يدوياً · رجّع للتلقائي</button>
-    : <small className="auto-on">تلقائي من أصل المساحة</small>;
+  return manual ? <button type="button" className="auto-reset" onClick={onReset}>معدّل يدوياً · رجّع للتلقائي</button> : null;
 }
 
 // One payment item: name, its amount, and where it goes (المطلوب دفعه / المتبقي).
 function PayItem({ title, amount, route, hint, children }) {
   return (
-    <section className="pitem">
+    <section className={`pitem branch tone-${route || 'none'}`}>
       <header>
         <b>{title}</b>
-        {route && <em className={`tag ${route}`}>{route === 'paid' ? 'في المطلوب دفعه' : 'في المتبقي'}</em>}
+        {route && <em className={`tag ${route}`}>{route === 'paid' ? 'المطلوب دفعه' : 'المتبقي'}</em>}
         <span className="pi-amt">{amount ? <><i className="num">{money(amount)}</i> ج</> : '—'}</span>
       </header>
       {hint && <small className="pi-hint">{hint}</small>}
-      {children}
+      {children && <div className="pi-body">{children}</div>}
     </section>
   );
 }
@@ -256,6 +254,13 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const sheet = useRef(null);
+  const itemsRef = useRef(null);
+  const [itemsOpen, setItemsOpen] = useState(false);
+  const toggleItems = () => {
+    const open = !itemsOpen;
+    setItemsOpen(open);
+    if (open) setTimeout(() => itemsRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60);
+  };
 
   const set = (k, v) => setD((s) => ({ ...s, [k]: v }));
   const setPay = (k, v) => setD((s) => ({ ...s, pay: { ...s.pay, [k]: v } }));
@@ -405,6 +410,11 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                     <u>اضغط لكتابة الأوفر المطلوب</u>
                   </button>
                 </div>
+                <button type="button" className={`items-btn branch${itemsOpen ? ' on' : ''}`} aria-expanded={itemsOpen} aria-controls="w-items" onClick={toggleItems}>
+                  <b>البنود</b>
+                  <small>{itemsOpen ? 'اضغط لإخفاء البنود' : 'اضغط لإظهار البنود'}</small>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
                 <div className="pt rem-t branch">
                   <span className="pt-lbl">المتبقي <small>تلقائي</small></span>
                   <b><i className="num">{money(b.remaining)}</i> ج</b>
@@ -426,18 +436,20 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               {d.over_amount !== '' && <small className="num">{money(num(d.over_amount))} ج</small>}
             </div>
 
-            <h4 className="pay-h">البنود</h4>
+            <section className={`items-sec${itemsOpen || error ? ' open' : ''}`} id="w-items" ref={itemsRef}>
+              <h4 className="items-h"><span>البنود</span><small>شيك التقنين · مصاريف التنازل · الاستكمال · الأقساط</small></h4>
+              {(itemsOpen || !!error) && (
+              <div className="items-tree">
 
             <PayItem title="شيك التقنين" amount={b.check} route={d.land_status ? (checkUnpaid ? 'rem' : 'paid') : ''}
               hint={checkFor(num(d.area_orig)) != null ? `حسب أصل المساحة ${num(d.area_orig)} م²` : ''}>
-              <Money id="w-check" label="قيمة الشيك (جنيه)" tag={<AutoTag hasCalc={checkFor(num(d.area_orig)) != null} manual={!!d.manual?.check} onReset={() => reset('check')} />}
-                value={d.manual?.check || checkFor(num(d.area_orig)) == null ? d.check_manual : e.check}
-                onChange={(v) => edit('check', (s) => ({ ...s, check_manual: v }))} />
+              {checkFor(num(d.area_orig)) == null && (
+                <Money id="w-check" label="قيمة الشيك" value={d.check_manual} onChange={(v) => set('check_manual', v)} />
+              )}
               {!d.land_status && <p className="pi-note">اختار الحالة علشان يتحدد الشيك يتضاف فين.</p>}
             </PayItem>
 
-            <PayItem title="مصاريف التنازل" amount={b.waiver} route={b.waiver ? 'rem' : ''}
-              >
+            <PayItem title="مصاريف التنازل" amount={b.waiver} route={b.waiver ? 'rem' : ''}>
               {!area && <p className="pi-note">بتتحسب لوحدها من المساحة.</p>}
             </PayItem>
 
@@ -455,7 +467,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               </div>
             </PayItem>
 
-            <PayItem title="الأقساط" amount={b.inst ? b.inst.value * INST_COUNT : null} hint={c ? '3 أقساط' : 'سيبها فاضية لو مفيش أقساط'}>
+            <PayItem title="الأقساط" amount={b.inst ? b.inst.value * INST_COUNT : null} route={b.inst ? (b.inst.leftN > 0 ? 'rem' : 'paid') : ''} hint={c ? '3 أقساط' : 'سيبها فاضية لو مفيش أقساط'}>
               <div className="grid">
                 <Money id="w-iv" label="قيمة القسط" tag={tag('inst')}
                   value={c && !d.manual?.inst ? e.instValue : d.pay.inst.value}
@@ -469,12 +481,15 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               </div>
               {b.inst && (
                 <div className="inst-split">
-                  <div className="paid-t"><span>مدفوعة <small>تلقائي</small></span><b><i className="num">{b.inst.paidN}</i> قسط · <i className="num">{money(b.inst.paid)}</i> ج</b></div>
-                  <div className="rem-t"><span>متبقية <small>تلقائي</small></span><b><i className="num">{b.inst.leftN}</i> قسط · <i className="num">{money(b.inst.left)}</i> ج</b></div>
+                  <div className="paid-t"><span>مدفوعة</span><b><i className="num">{b.inst.paidN}</i> قسط · <i className="num">{money(b.inst.paid)}</i> ج</b></div>
+                  <div className="rem-t"><span>متبقية</span><b><i className="num">{b.inst.leftN}</i> قسط · <i className="num">{money(b.inst.left)}</i> ج</b></div>
                 </div>
               )}
               {b.inst && !received && <p className="pi-note">أول قسط يتم دفعه بعد سنة من موعد الاستكمال.</p>}
             </PayItem>
+              </div>
+              )}
+            </section>
           </div>
         )}
 
