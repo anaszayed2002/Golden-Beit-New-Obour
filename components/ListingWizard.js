@@ -322,6 +322,16 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
   const [busy, setBusy] = useState(false);
   const sheet = useRef(null);
   const itemsRef = useRef(null);
+  const headRef = useRef(null);
+  useEffect(() => {
+    const el = headRef.current, sh = sheet.current;
+    if (!el || !sh || typeof ResizeObserver === 'undefined') return;
+    const apply = () => sh.style.setProperty('--head-h', `${el.offsetHeight}px`);
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [step]);
   const [itemsOpen, setItemsOpen] = useState(false);
   const toggleItems = () => {
     const open = !itemsOpen;
@@ -367,7 +377,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
   return (
     <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <form className="sheet has-top wizard" ref={sheet} onSubmit={next} noValidate>
-        <div className="wz-head">
+        <div className="wz-head" ref={headRef}>
           <SheetTop title={title} onClose={onClose} />
           {step === 3 && <p className="pt-note" role="note">{PRICE_NOTE.split('، ').map((t, i, all) => <span key={i}>{t}{i < all.length - 1 ? '،' : ''}</span>)}</p>}
         </div>
@@ -456,7 +466,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
         {step === 3 && (
           <div className="pay-step">
-            <div className="ptotals mirror" aria-live="polite">
+            <div className={`ptotals mirror${itemsOpen || error ? ' compact' : ''}`} aria-live="polite">
               <div className="pt hero-t">
                 <span>السعر الكلي <small>تلقائي</small></span>
                 <b><i className="num">{money(b.price)}</i> ج.م</b>
@@ -469,6 +479,9 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                     {b.paid ? <b><i className="num">{money(b.paid)}</i> ج.م</b> : <b className="none">—</b>}
                     <small>الأوفر المطلوب + كل اللي دفعته</small>
                   </div>
+                  {d.over_amount === '' && (
+                    <svg className="over-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6" /></svg>
+                  )}
                   <label className="pt-over" htmlFor="w-over">
                     <span>الأوفر المطلوب <em>إجباري</em></span>
                     <span className="pt-over-in">

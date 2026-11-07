@@ -1011,3 +1011,39 @@ table.cmp td { text-align: center; min-width: 8em; }
 .money-in { position: relative; }
 .money-in .auto-reset { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); margin: 0; font-size: 12px; font-weight: 700; padding: 5px 10px; background: var(--forest); color: #fff; }
 .money-in:has(.auto-reset) input { padding-left: 120px; }
+
+/* v26: totals shrink to a compact pinned strip (about a fifth of the screen) while the items are open */
+.ptotals.mirror.compact { position: sticky; top: calc(var(--head-h, 130px) - 1px); z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  max-height: 20vh; padding: 6px 0 8px; margin: 0; background: var(--panel); box-shadow: 0 10px 14px -12px #0A302255; }
+.ptotals.compact .pt.hero-t { grid-column: 1 / -1; display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 7px 12px; }
+.ptotals.compact .pt-tree { display: contents; }
+.ptotals.compact .branch::before, .ptotals.compact .branch::after { display: none; }
+.ptotals.compact .paid-split { display: flex !important; }
+.ptotals.compact .pt { padding: 6px 10px; border-radius: 12px; gap: 0; }
+.ptotals.compact .pt.rem-t { padding-top: 6px; }
+.ptotals.compact .hero-t > small, .ptotals.compact .paid-main > small, .ptotals.compact .rem-parts, .ptotals.compact .rem-t > small,
+.ptotals.compact .pt-over, .ptotals.compact .over-arrow, .ptotals.compact .items-btn, .ptotals.compact .pt-lbl small, .ptotals.compact .hero-t > span small { display: none; }
+.ptotals.mirror.compact .pt.hero-t b { font-size: 19px; }
+.ptotals.mirror.compact .pt b { font-size: 15.5px; }
+.ptotals.compact .pt-lbl, .ptotals.compact .hero-t > span { font-size: 11.5px; }
+
+/* smaller over box with an arrow pointing at it */
+.paid-split { grid-template-columns: minmax(0, 1fr) auto 116px; column-gap: 6px; }
+.paid-split .paid-main { grid-column: 1; }
+.over-arrow { grid-column: 2; align-self: center; width: 22px; height: 22px; fill: none; stroke: var(--gold-ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round;
+  transform: scaleX(-1); animation: nudge-arrow 1.1s ease-in-out infinite; }
+[dir="ltr"] .over-arrow { transform: none; }
+@keyframes nudge-arrow { 0%, 100% { transform: scaleX(-1) translateX(0); } 50% { transform: scaleX(-1) translateX(5px); } }
+.paid-split .pt-over { grid-column: 3; padding: 6px 8px; gap: 2px; }
+.pt-over > span:first-child { font-size: 10.5px; }
+.pt-over em { font-size: 9px; padding: 0 5px; }
+.pt-over-in { padding: 0 8px; }
+.pt-over-in input { font-size: 15px; padding: 5px 0; }
+.pt-over u { font-size: 10px; }
+@media (prefers-reduced-motion: reduce) { .over-arrow { animation: none; } }
+.ptotals.compact .pt.rem-t, .ptotals.compact .pt.paid-t { grid-column: auto; }
+.ptotals.mirror.compact { height: 20vh; min-height: 130px; max-height: none; grid-template-rows: auto 1fr; }
+.ptotals.compact .pt.paid-t, .ptotals.compact .pt.rem-t { justify-content: center; }
+.ptotals.mirror.compact .pt.hero-t b { font-size: 22px; }
+.ptotals.mirror.compact .pt b { font-size: 18px; }
+.ptotals.compact .pt-lbl, .ptotals.compact .hero-t > span { font-size: 12.5px; }
