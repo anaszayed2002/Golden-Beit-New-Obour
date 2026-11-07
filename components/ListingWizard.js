@@ -484,7 +484,12 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                   </button>
                   <span className="pt-lbl">المتبقي <small>تلقائي</small></span>
                   <b><i className="num">{money(b.remaining)}</i> ج.م</b>
-                  <small>يدفعه المشتري لاحقاً (المتبقي من الاستكمال والأقساط، والشيك لو لم يتم دفعه)</small>
+                  <div className="rem-parts">
+                    <small>يدفعه المشتري لاحقاً:</small>
+                    <span className="arc">الاستكمال</span><i aria-hidden="true">+</i>
+                    <span className="arc">الأقساط</span><i aria-hidden="true">+</i>
+                    <span className="arc">الشيك لو لم يتم دفعه</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -493,7 +498,13 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               <p className="calc-off">الحساب التلقائي بيشتغل لما تكتب <b>أصل المساحة</b> (من {LEGAL.minArea} لأقل من {LEGAL.autoBelow} م²) في الخطوة التانية. غير كده اكتب الأرقام بنفسك.</p>
             )}
             <section className={`items-sec${itemsOpen || error ? ' open' : ''}`} id="w-items" ref={itemsRef}>
-              <h4 className="items-h"><span>البنود</span><small>شيك التقنين · مصاريف التنازل · الاستكمال · الأقساط</small></h4>
+              <h4 className="items-h-wrap">
+                <button type="button" className={`items-h${itemsOpen ? ' on' : ''}`} aria-expanded={itemsOpen} aria-controls="w-items" onClick={() => setItemsOpen((o) => !o)}>
+                  <span>البنود</span>
+                  <small>{itemsOpen ? 'اضغط لإخفاء البنود' : 'اضغط لإظهار البنود'} · شيك التقنين · مصاريف التنازل · الاستكمال · الأقساط</small>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+              </h4>
               {(itemsOpen || !!error) && (
               <div className="items-tree">
 
