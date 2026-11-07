@@ -219,7 +219,7 @@ function StatusPicker({ value, onChange }) {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
         </button>
       ) : (
-        <>
+        <div className="sp-wrap">
           <div className="sp-halves">
             {STATUS_GROUPS.map((g) => (
               <button key={g.key} type="button" id={g.key === 'un' ? 'w-status' : undefined} className={`sp-half${open === g.key ? ' on' : ''}`}
@@ -239,7 +239,7 @@ function StatusPicker({ value, onChange }) {
               ))}
             </ul>
           )}
-        </>
+        </div>
       )}
     </div>
   );
