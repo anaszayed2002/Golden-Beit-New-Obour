@@ -829,3 +829,5 @@ table.cmp td { text-align: center; min-width: 8em; }
 .price-seal .seal-note { position: relative; z-index: 1; margin: 0 0 0 -16px; padding: 10px 12px 10px 22px; max-width: min(260px, calc(100vw - 96px));
   direction: rtl; background: #ffffffb3; color: var(--forest); border: 2px solid #e6c46a; border-radius: 16px; font-size: 13.5px; line-height: 1.9; font-weight: 600;
   opacity: .42; box-shadow: none; pointer-events: none; user-select: none; }
+.price-seal .seal-badge { height: 68px; }
+@media (min-width: 900px) { .price-seal .seal-badge { height: 84px; } }

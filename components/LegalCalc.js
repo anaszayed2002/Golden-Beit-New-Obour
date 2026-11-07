@@ -98,15 +98,12 @@ export function PriceSeal() {
   return (
     <div className="price-seal">
       <span className="seal-badge" aria-hidden="true">
-        <svg viewBox="0 0 100 118" aria-hidden="true">
-          <polygon points="30,74 22,114 36,104 46,116 50,80" fill="#8a1f1f" />
-          <polygon points="70,74 78,114 64,104 54,116 50,80" fill="#a52a2a" />
+        <svg viewBox="0 0 100 100" aria-hidden="true">
           <polygon points={SEAL_PTS} fill="url(#seal-gold)" stroke="#9a7417" strokeWidth="1.2" strokeLinejoin="round" />
           <circle cx="50" cy="50" r="34" fill="#0A3022" stroke="#f3d77a" strokeWidth="2.5" />
           <circle cx="50" cy="50" r="29.5" fill="none" stroke="#f3d77a55" strokeWidth="1" />
-          <text x="50" y="47" textAnchor="middle" fontSize="12.5" fontWeight="800" fill="#fff">أسعار</text>
-          <text x="50" y="62" textAnchor="middle" fontSize="11" fontWeight="800" fill="#f3d77a">استرشادية</text>
-          {[34, 42, 50, 58, 66].map((x, i) => <text key={x} x={x} y={i === 2 ? 75 : 73} textAnchor="middle" fontSize="6" fill="#f3d77a">★</text>)}
+          <text x="50" y="49" textAnchor="middle" fontSize="12.5" fontWeight="800" fill="#fff">أسعار</text>
+          <text x="50" y="64" textAnchor="middle" fontSize="11" fontWeight="800" fill="#f3d77a">استرشادية</text>
           <defs>
             <linearGradient id="seal-gold" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0" stopColor="#fbe7a1" /><stop offset=".5" stopColor="#d9a92e" /><stop offset="1" stopColor="#a87b14" />
