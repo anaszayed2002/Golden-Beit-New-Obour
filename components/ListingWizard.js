@@ -7,7 +7,8 @@ import {
   breakdown, checkFor, legalCalc, LEGAL, addYears, fmtMonth, monthBefore,
 } from '@/lib/site';
 import SheetTop from './SheetTop';
-import { PRICE_NOTE, r1 } from '@/lib/site';
+import { r1 } from '@/lib/site';
+import { PriceSeal } from './LegalCalc';
 import { uploadPhoto, photoUrl } from '@/lib/supabase';
 
 const STEP_NAMES = ['المكان', 'المساحة والحالة', 'المميزات والصورة', 'السعر والدفع', 'البيانات'];
@@ -392,7 +393,6 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
       <form className="sheet has-top wizard" ref={sheet} onSubmit={next} noValidate>
         <div className="wz-head" ref={headRef}>
           <SheetTop title={title} onClose={onClose} />
-          {step === 3 && <p className="pt-note" role="note">{PRICE_NOTE.split('، ').map((t, i, all) => <span key={i}>{t}{i < all.length - 1 ? '،' : ''}</span>)}</p>}
         </div>
         <div className="steps" aria-hidden="true">
           {STEP_NAMES.map((n, i) => <i key={n} className={i < step ? 'done' : i === step ? 'on' : ''} />)}
@@ -479,6 +479,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
         {step === 3 && (
           <div className="pay-step">
+            <PriceSeal />
             <div className={`ptotals mirror${itemsOpen || error ? ' compact' : ''}`} aria-live="polite">
               <div className="pt hero-t">
                 <span>السعر الكلي <small>تلقائي</small></span>
