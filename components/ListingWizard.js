@@ -7,7 +7,7 @@ import {
   breakdown, checkFor, legalCalc, LEGAL, addYears, fmtMonth, monthBefore,
 } from '@/lib/site';
 import SheetTop from './SheetTop';
-import { PriceNote } from './LegalCalc';
+import { PriceSeal } from './LegalCalc';
 import { uploadPhoto, photoUrl } from '@/lib/supabase';
 
 const STEP_NAMES = ['المكان', 'المساحة والحالة', 'المميزات والصورة', 'السعر والدفع', 'البيانات'];
@@ -388,7 +388,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             {!c && (
               <p className="calc-off">الحساب التلقائي بيشتغل لما تكتب <b>أصل المساحة</b> (من {LEGAL.minArea} لأقل من {LEGAL.autoBelow} م²) في الخطوة التانية. غير كده اكتب الأرقام بنفسك.</p>
             )}
-            <PriceNote />
+            <PriceSeal />
             <div className="over-box">
               <label htmlFor="w-over">الأوفر المطلوب <em>إجباري</em></label>
               <p>المبلغ اللي عايزه فوق المدفوع، بالجنيه.</p>

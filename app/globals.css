@@ -802,3 +802,11 @@ table.cmp td { text-align: center; min-width: 8em; }
 .tier-choice button small { font-size: 11.5px; color: var(--muted); }
 .tier-choice button[aria-pressed="true"] { background: var(--forest); border-color: var(--forest); color: #fff; }
 .tier-choice button[aria-pressed="true"] small { color: #cfe3db; }
+
+/* v13: price seal, fixed on the left edge */
+.price-seal { position: fixed; z-index: 60; left: max(4px, env(safe-area-inset-left, 0px)); top: 46%; direction: ltr; display: flex; align-items: center; gap: 6px; pointer-events: none; }
+.price-seal button { pointer-events: auto; width: 68px; height: 80px; padding: 0; border: 0; background: none; cursor: pointer; filter: drop-shadow(0 6px 10px #0A302255); animation: seal-in .5s ease-out; }
+.price-seal button svg { width: 100%; height: 100%; display: block; font-family: inherit; }
+.price-seal p { pointer-events: auto; direction: rtl; margin: 0; max-width: min(260px, calc(100vw - 96px)); background: #fff; color: var(--forest); border: 2px solid #e6c46a; border-radius: 16px; padding: 10px 12px; font-size: 13.5px; line-height: 1.9; font-weight: 600; box-shadow: 0 14px 30px -14px #0A302288; }
+@keyframes seal-in { from { transform: scale(.5) rotate(-20deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (min-width: 900px) { .price-seal button { width: 84px; height: 99px; } }

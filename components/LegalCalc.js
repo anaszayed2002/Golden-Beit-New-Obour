@@ -85,3 +85,37 @@ export function PriceBubble() {
     </div>
   );
 }
+
+// Scalloped edge of the seal, as polygon points on a 100x100 box.
+const SEAL_PTS = Array.from({ length: 48 }, (_, i) => {
+  const ang = (i / 48) * Math.PI * 2 - Math.PI / 2;
+  const r = i % 2 ? 42 : 47;
+  return `${(50 + r * Math.cos(ang)).toFixed(2)},${(50 + r * Math.sin(ang)).toFixed(2)}`;
+}).join(' ');
+
+// A gold seal fixed on the left edge while scrolling; tap it to read the full note.
+export function PriceSeal() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`price-seal${open ? ' open' : ''}`}>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="الأسعار استرشادية، اضغط للتفاصيل">
+        <svg viewBox="0 0 100 118" aria-hidden="true">
+          <polygon points="30,74 22,114 36,104 46,116 50,80" fill="#8a1f1f" />
+          <polygon points="70,74 78,114 64,104 54,116 50,80" fill="#a52a2a" />
+          <polygon points={SEAL_PTS} fill="url(#seal-gold)" stroke="#9a7417" strokeWidth="1.2" strokeLinejoin="round" />
+          <circle cx="50" cy="50" r="34" fill="#0A3022" stroke="#f3d77a" strokeWidth="2.5" />
+          <circle cx="50" cy="50" r="29.5" fill="none" stroke="#f3d77a55" strokeWidth="1" />
+          <text x="50" y="47" textAnchor="middle" fontSize="12.5" fontWeight="800" fill="#fff">أسعار</text>
+          <text x="50" y="62" textAnchor="middle" fontSize="11" fontWeight="800" fill="#f3d77a">استرشادية</text>
+          {[34, 42, 50, 58, 66].map((x, i) => <text key={x} x={x} y={i === 2 ? 75 : 73} textAnchor="middle" fontSize="6" fill="#f3d77a">★</text>)}
+          <defs>
+            <linearGradient id="seal-gold" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#fbe7a1" /><stop offset=".5" stopColor="#d9a92e" /><stop offset="1" stopColor="#a87b14" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </button>
+      {open && <p role="note">{PRICE_NOTE}</p>}
+    </div>
+  );
+}
