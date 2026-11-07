@@ -782,3 +782,16 @@ table.cmp td { text-align: center; min-width: 8em; }
 .price-note.compact { font-size: 12.5px; padding: 10px 12px; border-radius: 14px; }
 .pcard .price-note { margin: 0 14px 14px; }
 .drawer .price-note, .pay-step .price-note { margin: 0; }
+
+/* area tier slider + calc-off banner */
+.tier-field { gap: 8px; }
+.tier-now { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--forest); min-height: 28px; }
+.tier-now b { font-family: var(--f-display); font-weight: 500; font-size: 24px; }
+.tier-range { -webkit-appearance: none; appearance: none; width: 100%; height: 34px; background: transparent; padding: 0 !important; min-height: 0 !important; border: 0 !important; }
+.tier-range::-webkit-slider-runnable-track { height: 6px; border-radius: 99px; background: linear-gradient(to left, var(--teal), #cfdcd5); }
+.tier-range::-moz-range-track { height: 6px; border-radius: 99px; background: linear-gradient(to left, var(--teal), #cfdcd5); }
+.tier-range::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; margin-top: -11px; border-radius: 50%; background: #fff; border: 3px solid var(--forest); box-shadow: 0 2px 8px #0A302244; cursor: grab; }
+.tier-range::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 3px solid var(--forest); box-shadow: 0 2px 8px #0A302244; cursor: grab; box-sizing: border-box; }
+.tier-ticks { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); padding-inline: 6px; }
+.tier-ticks span.on { color: var(--forest); font-weight: 800; }
+.calc-off { margin: 0; background: #fdf0ee; border: 1.5px solid #e8b9b2; color: #8a2d22; border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.8; }
