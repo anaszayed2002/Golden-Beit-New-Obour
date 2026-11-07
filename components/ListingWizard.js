@@ -334,7 +334,21 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                     {c.missing > 0 && <> ← ناقص <b className="num">{c.missing}</b> م² هتشتريهم</>}
                     {c.extra > 0 && <> ← زيادة <b className="num">{c.extra}</b> م² هتبيعهم</>}
                   </span>
-                  {c.options.length > 1 && <span className="muted">مساحتك في النص تقريباً بين {c.options.join(' و ')} م²، حرّك الشريط للي يناسبك.</span>}
+                  <span className="muted">الشريحة بتتحدد على الصافي بعد خصم الطرق، مش على أصل المساحة.</span>
+                  {c.options.length > 1 && (
+                    <div className="tier-choice">
+                      <span>صافيك ما بين شريحتين، اختار:</span>
+                      {c.options.map((t) => {
+                        const diff = Math.abs(t - c.net);
+                        return (
+                          <button key={t} type="button" aria-pressed={c.tier === t} onClick={() => set('tier', t)}>
+                            <b className="num">{t}</b> م²
+                            <small>{t > c.net ? <>تشتري <span className="num">{diff}</span> م² × 3,000</> : <>تبيع <span className="num">{diff}</span> م² × 700</>}</small>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </>
             ) : (

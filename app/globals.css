@@ -795,3 +795,10 @@ table.cmp td { text-align: center; min-width: 8em; }
 .tier-ticks { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); padding-inline: 6px; }
 .tier-ticks span.on { color: var(--forest); font-weight: 800; }
 .calc-off { margin: 0; background: #fdf0ee; border: 1.5px solid #e8b9b2; color: #8a2d22; border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.8; }
+.tier-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tier-choice > span { grid-column: 1 / -1; color: var(--gold-ink); font-weight: 700; }
+.tier-choice button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px; border-radius: 14px; border: 1.5px solid #cfdcd5; background: #fff; color: var(--forest); cursor: pointer; font-size: 14px; }
+.tier-choice button b { font-size: 20px; }
+.tier-choice button small { font-size: 11.5px; color: var(--muted); }
+.tier-choice button[aria-pressed="true"] { background: var(--forest); border-color: var(--forest); color: #fff; }
+.tier-choice button[aria-pressed="true"] small { color: #cfe3db; }
