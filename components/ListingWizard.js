@@ -248,11 +248,11 @@ function StatusPicker({ value, onChange }) {
 // Shows whether a value comes from the calculation, with a way back to it after an edit.
 function AutoTag({ manual, onReset, hasCalc }) {
   if (!hasCalc) return null;
-  return manual ? <button type="button" className="auto-reset" onClick={onReset}>معدّل يدوياً · رجّع للتلقائي</button> : null;
+  return manual ? <button type="button" className="auto-reset" onClick={onReset}>رجّع للتلقائي</button> : null;
 }
 
 // One payment item: name, its amount, and where it goes (المطلوب دفعه / المتبقي).
-function PayItem({ title, amount, route, remLabel = 'المتبقي', hint, children }) {
+function PayItem({ title, amount, route, remLabel = 'متبقي', hint, children }) {
   return (
     <section className={`pitem branch tone-${route || 'none'}`}>
       <header>
@@ -269,8 +269,11 @@ function PayItem({ title, amount, route, remLabel = 'المتبقي', hint, chil
 function Money({ id, label, value, onChange, full, tag }) {
   return (
     <div className={`field${full ? ' full' : ''}`}>
-      <label htmlFor={id}>{label} {tag}</label>
-      <input id={id} type="number" inputMode="decimal" min="0" value={value} onFocus={(e) => e.target.select()} onChange={(e) => onChange(e.target.value)} />
+      <label htmlFor={id}>{label}</label>
+      <div className="money-in">
+        <input id={id} type="number" inputMode="decimal" min="0" value={value} onFocus={(e) => e.target.select()} onChange={(e) => onChange(e.target.value)} />
+        {tag}
+      </div>
       <span className="hint num">{value ? `${money(num(value))} ج.م` : ''}</span>
     </div>
   );
@@ -534,7 +537,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               </div>
             </PayItem>
 
-            <PayItem title="الأقساط" remLabel="متبقي" amount={b.inst ? b.inst.value * INST_COUNT : null} route={b.inst ? (b.inst.leftN > 0 ? 'rem' : 'paid') : ''} hint={c ? '3 أقساط' : 'سيبها فاضية لو مفيش أقساط'}>
+            <PayItem title="الأقساط" amount={b.inst ? b.inst.value * INST_COUNT : null} route={b.inst ? (b.inst.leftN > 0 ? 'rem' : 'paid') : ''} hint={c ? '3 أقساط' : 'سيبها فاضية لو مفيش أقساط'}>
               <div className="grid">
                 <Money id="w-iv" label="قيمة القسط" tag={tag('inst')}
                   value={c && !d.manual?.inst ? e.instValue : d.pay.inst.value}
