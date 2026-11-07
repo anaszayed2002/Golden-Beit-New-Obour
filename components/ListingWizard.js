@@ -7,7 +7,7 @@ import {
   breakdown, checkFor, legalCalc, LEGAL, addYears, fmtMonth, monthBefore,
 } from '@/lib/site';
 import SheetTop from './SheetTop';
-import { PRICE_NOTE } from '@/lib/site';
+import { PRICE_NOTE, r1 } from '@/lib/site';
 import { uploadPhoto, photoUrl } from '@/lib/supabase';
 
 const STEP_NAMES = ['المكان', 'المساحة والحالة', 'المميزات والصورة', 'السعر والدفع', 'البيانات'];
@@ -347,7 +347,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                     <div className="tier-choice">
                       <span>صافيك ما بين شريحتين، اختار:</span>
                       {c.options.map((t) => {
-                        const diff = Math.abs(t - c.net);
+                        const diff = r1(Math.abs(t - c.net));
                         return (
                           <button key={t} type="button" aria-pressed={c.tier === t} onClick={() => set('tier', t)}>
                             <b className="num">{t}</b> م²
