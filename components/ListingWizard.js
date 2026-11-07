@@ -201,6 +201,50 @@ function TierSlider({ value, suggested, onChange, onClear }) {
   );
 }
 
+// الحالة: two halves (غير مخصصة / مخصصة); each opens its three statuses, then only the choice is shown.
+const STATUS_GROUPS = [
+  { key: 'un', name: 'غير مخصصة', ids: [1, 2, 3] },
+  { key: 'al', name: 'مخصصة', ids: [4, 5, 6] },
+];
+function StatusPicker({ value, onChange }) {
+  const [open, setOpen] = useState(null);
+  const chosen = Number(value) || 0;
+  const group = STATUS_GROUPS.find((g) => g.key === open);
+  return (
+    <div className="field full status-pick">
+      <span className="lbl">اختار الحالة (غير مخصصة / مخصصة)</span>
+      {chosen && !open ? (
+        <button type="button" id="w-status" className="sp-chosen" onClick={() => setOpen(chosen <= 3 ? 'un' : 'al')} aria-label={`الحالة: ${STATUSES[chosen - 1]}، اضغط للتغيير`}>
+          <b>{STATUSES[chosen - 1]}</b>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+        </button>
+      ) : (
+        <>
+          <div className="sp-halves">
+            {STATUS_GROUPS.map((g) => (
+              <button key={g.key} type="button" id={g.key === 'un' ? 'w-status' : undefined} className={`sp-half${open === g.key ? ' on' : ''}`}
+                aria-expanded={open === g.key} onClick={() => setOpen(open === g.key ? null : g.key)}>
+                <b>{g.name}</b>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+              </button>
+            ))}
+          </div>
+          {group && (
+            <ul className={`sp-list ${group.key}`} role="listbox" aria-label={group.name}>
+              {group.ids.map((id) => (
+                <li key={id}>
+                  <button type="button" role="option" aria-selected={chosen === id} className={chosen === id ? 'on' : ''}
+                    onClick={() => { onChange(id); setOpen(null); }}>{STATUSES[id - 1]}</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // Shows whether a value comes from the calculation, with a way back to it after an edit.
 function AutoTag({ manual, onReset, hasCalc }) {
   if (!hasCalc) return null;
@@ -365,11 +409,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             {num(d.area_orig) >= LEGAL.autoBelow && (
               <p className="full pi-note">حسبة المساحات من 500 م² وطالع لسه بتتراجع، فاكتب المساحة بعد التقنين وأرقام الدفع بنفسك.</p>
             )}
-            <div className="field full"><label htmlFor="w-status">الحالة</label>
-              <select id="w-status" value={d.land_status || ''} onChange={(e) => set('land_status', Number(e.target.value) || 0)}>
-                <option value="">اختار الحالة</option>
-                {STATUSES.map((t, i) => <option key={t} value={i + 1}>{t}</option>)}
-              </select></div>
+            <StatusPicker value={d.land_status} onChange={(v) => set('land_status', v)} />
             {received && (
               <div className="full paybox">
                 <h4>مسار التسليم والبناء</h4>
