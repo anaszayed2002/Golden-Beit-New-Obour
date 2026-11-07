@@ -6,7 +6,7 @@ import SheetTop from './SheetTop';
 const ZOOMS = [0.7, 0.85, 1, 1.15, 1.3, 1.5];
 const m = (v) => (v ? <><span className="num">{money(v)}</span> ج</> : '—');
 
-// Each unit is one row; the table scrolls both ways and can be zoomed in or out.
+// Each unit is one column (details as rows); the table scrolls both ways and can be zoomed in or out.
 const COLS = [
   ['المكان', (x) => placeOf(x)],
   ['الحي', (x) => x.district || '—'],
@@ -42,13 +42,20 @@ export default function Compare({ items, onRemove, onClear, onOpen, onClose }) {
         ) : (
           <div className="cmp-scroll">
             <table className="cmp" style={{ fontSize: `${14 * ZOOMS[z]}px` }}>
-              <thead><tr><th className="stick">الوحدة</th>{COLS.map(([t]) => <th key={t}>{t}</th>)}<th /></tr></thead>
-              <tbody>
+              <thead><tr>
+                <th className="stick">الوحدة</th>
                 {items.map((x) => (
-                  <tr key={x.id}>
-                    <th className="stick"><button type="button" className="linkbtn num" onClick={() => onOpen(x)}>{listingCode(x.id)}</button></th>
-                    {COLS.map(([t, f]) => <td key={t}>{f(x)}</td>)}
-                    <td><button type="button" className="cmp-x" onClick={() => onRemove(x.id)} aria-label={`شيل ${listingCode(x.id)} من المقارنة`}>✕</button></td>
+                  <th key={x.id} className="cmp-unit">
+                    <button type="button" className="linkbtn num" onClick={() => onOpen(x)}>{listingCode(x)}</button>
+                    <button type="button" className="cmp-x" onClick={() => onRemove(x.id)} aria-label={`شيل ${listingCode(x)} من المقارنة`}>✕</button>
+                  </th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {COLS.map(([t, f]) => (
+                  <tr key={t}>
+                    <th className="stick">{t}</th>
+                    {items.map((x) => <td key={x.id}>{f(x)}</td>)}
                   </tr>
                 ))}
               </tbody>

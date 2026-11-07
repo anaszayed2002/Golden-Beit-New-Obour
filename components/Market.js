@@ -9,7 +9,7 @@ import {
 import StopRange from './StopRange';
 import PlotCard from './PlotCard';
 import Compare from './Compare';
-import { CalcModal, PriceBubble } from './LegalCalc';
+import { PriceBubble } from './LegalCalc';
 
 // "—" instead of a misleading 0 when a listing has no paid/over amount.
 const Amount = ({ x, value, className, unit = 'ج' }) => (hasPayment(x)
@@ -136,9 +136,9 @@ export default function Market() {
   function openCode(e) {
     e.preventDefault();
     const id = parseCode(code);
-    if (!id) return setCodeMsg('اكتب الكود، مثلاً GB-104.');
+    if (!id) return setCodeMsg('اكتب كود الوحدة، مثلاً Q2611C-261.');
     const x = all.find((l) => l.id === id);
-    if (!x) return setCodeMsg(`مفيش قطعة منشورة بالكود ${listingCode(id)}.`);
+    if (!x) return setCodeMsg('مفيش قطعة منشورة بالكود ده.');
     setCodeMsg('');
     setSelected(x);
   }
@@ -146,7 +146,7 @@ export default function Market() {
   async function submitOffer(payload) {
     const { data, error } = await supabase.rpc('nob_submit_offer', { p: payload });
     if (error) return serverError(error, 'مقدرناش نبعت الإعلان. جرب تاني.');
-    setModal({ type: 'sent', id: data });
+    setModal({ type: 'sent', id: data, code: listingCode({ ...payload, id: data, created_at: new Date().toISOString() }) });
     return '';
   }
 
@@ -166,14 +166,10 @@ export default function Market() {
           <h1>أراضي القادسية والأمل في العبور الجديدة</h1>
           <p>معاك كود قطعة؟ اكتبه هنا وافتحها على طول.</p>
           <form className="codebox" onSubmit={openCode} autoComplete="off" role="search">
-            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="كود القطعة، مثلاً GB-104" aria-label="كود القطعة" />
+            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="كود الوحدة، مثلاً Q2611C-261" aria-label="كود القطعة" />
             <button className="btn" type="submit">افتح</button>
           </form>
           <div className="code-msg" role="status">{codeMsg}</div>
-          <button type="button" className="calc-link" onClick={() => setModal('calc')}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2.5" /><path d="M8.5 7h7M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h7" /></svg>
-            احسب تكلفة تقنين أرضك
-          </button>
         </div>
       </section>
 
@@ -287,7 +283,7 @@ export default function Market() {
                 {visible.map((x) => (
                   <tr key={x.id} tabIndex={0} className={selected?.id === x.id ? 'sel' : ''}
                     onClick={() => setSelected(x)} onKeyDown={(e) => e.key === 'Enter' && setSelected(x)}>
-                    <td className="code num">{listingCode(x.id)}</td>
+                    <td className="code num">{listingCode(x)}</td>
                     <td className="place"><span className="zone">{placeOf(x)}</span>
                       {(x.district || x.neighborhood) && <small>{[x.district, x.neighborhood].filter(Boolean).join(' · ')}</small>}</td>
                     <td><span className="num">{areaOf(x)}</span> م²</td>
@@ -297,8 +293,8 @@ export default function Market() {
                     <td>{remainingOf(x) > 0 ? <span className="rem"><span className="num">{money(remainingOf(x))}</span><span className="cur">ج</span></span> : <span className="muted">—</span>}</td>
                     <td className="more-cell" onClick={(e) => e.stopPropagation()}>
                       <div className="t-acts">
-                        <button className="ic-btn" title="عرض كبطاقة" aria-label={`عرض ${listingCode(x.id)} كبطاقة`} onClick={() => setCardOf(x)}><CardIcon /></button>
-                        <button className="ic-btn" title="قارن" aria-pressed={cmp.includes(x.id)} aria-label={`قارن ${listingCode(x.id)}`} onClick={() => toggleCmp(x.id)}><CompareIcon /></button>
+                        <button className="ic-btn" title="عرض كبطاقة" aria-label={`عرض ${listingCode(x)} كبطاقة`} onClick={() => setCardOf(x)}><CardIcon /></button>
+                        <button className="ic-btn" title="قارن" aria-pressed={cmp.includes(x.id)} aria-label={`قارن ${listingCode(x)}`} onClick={() => toggleCmp(x.id)}><CompareIcon /></button>
                         <button className="btn more" onClick={() => setSelected(x)}>تفاصيل <span aria-hidden="true">←</span></button>
                       </div>
                     </td>
@@ -312,7 +308,7 @@ export default function Market() {
                 <article key={x.id} className="row" onClick={() => setSelected(x)}>
                   <div className="r-top">
                     <span className="r-zone">{placeOf(x)}</span>
-                    <span className="r-code">كود الوحدة <b className="num">{listingCode(x.id)}</b></span>
+                    <span className="r-code">كود الوحدة <b className="num">{listingCode(x)}</b></span>
                   </div>
                   {(x.district || x.neighborhood) && (
                     <div className="r-loc">
@@ -384,8 +380,6 @@ export default function Market() {
 
       {cardOf && <PlotCard x={cardOf} onClose={() => setCardOf(null)} />}
 
-      {modal === 'calc' && <CalcModal onClose={() => setModal(null)} />}
-
       <PriceBubble />
 
       {modal === 'offer' && (
@@ -399,7 +393,7 @@ export default function Market() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
             </div>
             <h3 id="sent-title">تم إرسال الإعلان</h3>
-            <p>كود إعلانك <b className="num">{listingCode(modal.id)}</b><br />سيتم مراجعة إعلانك ونشره في أقرب وقت.<br />نتمنى لك التوفيق.</p>
+            <p>كود إعلانك <b className="num">{modal.code}</b><br />سيتم مراجعة إعلانك ونشره في أقرب وقت.<br />نتمنى لك التوفيق.</p>
             <button className="btn primary block" onClick={() => setModal(null)} autoFocus>تمام</button>
           </div>
         </div>
@@ -418,7 +412,7 @@ function Drawer({ item: x, zone, onClose, onCard, inCompare, onCompare }) {
   const [sent, setSent] = useState(false);
   const rows = payRows(x);
   const delivery = deliveryRows(x);
-  const msg = `السلام عليكم، أنا مهتم بالقطعة كود ${listingCode(x.id)}: ${placeOf(x)}، ${areaOf(x)} م²، السعر ${money(x.price)} جنيه.`;
+  const msg = `السلام عليكم، أنا مهتم بالقطعة كود ${listingCode(x)}: ${placeOf(x)}، ${areaOf(x)} م²، السعر ${money(x.price)} جنيه.`;
   const geo = zone && [['اللوكيشن', zone.location], ['المحاور', zone.axes], ['الخدمات', zone.services]].filter(([, v]) => v);
 
   async function buy(e) {
@@ -436,7 +430,7 @@ function Drawer({ item: x, zone, onClose, onCard, inCompare, onCompare }) {
   return (
     <aside className="drawer" aria-label="تفاصيل القطعة">
       <div className="body">
-        <SheetTop title={<>قطعة في {placeOf(x)} <span className="code num">{listingCode(x.id)}</span></>} onClose={onClose} />
+        <SheetTop title={<>قطعة في {placeOf(x)} <span className="code num">{listingCode(x)}</span></>} onClose={onClose} />
         <div className="d-acts">
           <button className="btn soft" onClick={onCard}><CardIcon /> عرض كبطاقة</button>
           <button className="btn soft" aria-pressed={inCompare} onClick={onCompare}><CompareIcon /> {inCompare ? 'مضافة للمقارنة' : 'أضف للمقارنة'}</button>
@@ -472,10 +466,10 @@ function Drawer({ item: x, zone, onClose, onCard, inCompare, onCompare }) {
       </div>
       <div className="cta">
         {sent ? (
-          <div className="okmsg" role="status">طلب الشراء للقطعة {listingCode(x.id)} وصل. هنكلمك قريب.</div>
+          <div className="okmsg" role="status">طلب الشراء للقطعة {listingCode(x)} وصل. هنكلمك قريب.</div>
         ) : (
           <form className="buyform" onSubmit={buy} noValidate>
-            <b>طلب شراء القطعة {listingCode(x.id)}</b>
+            <b>طلب شراء القطعة {listingCode(x)}</b>
             <div className="buy-fields">
               <input aria-label="الاسم" placeholder="اسمك" autoComplete="name" maxLength={80} required
                 value={name} onChange={(e) => setName(e.target.value)} />

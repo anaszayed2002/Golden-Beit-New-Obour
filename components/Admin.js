@@ -92,8 +92,9 @@ export default function Admin() {
     if (done) showToast(done);
     load();
   }
-  const setStatus = (id, status) => act('nob_admin_set_status', { p_listing_id: id, p_status: status }, `${listingCode(id)}: ${STATUS[status]}`);
-  const remove = (id) => { setConfirmDelete(null); act('nob_admin_delete_listing', { p_id: id }, `${listingCode(id)} اتمسح`); };
+  const codeOf = (id) => listingCode(listings.find((l) => l.id === id) || id);
+  const setStatus = (id, status) => act('nob_admin_set_status', { p_listing_id: id, p_status: status }, `${codeOf(id)}: ${STATUS[status]}`);
+  const remove = (id) => { setConfirmDelete(null); act('nob_admin_delete_listing', { p_id: id }, `${codeOf(id)} اتمسح`); };
   const setHandled = (id, handled) => act('nob_admin_set_handled', { p_request_id: id, p_handled: handled });
 
   async function saveListing(payload) {
@@ -101,7 +102,7 @@ export default function Admin() {
     const { data, error } = await supabase.rpc('nob_admin_save_listing', { p_id: editId, p: payload });
     if (error) return serverError(error, 'مقدرناش نحفظ الإعلان. جرب تاني.');
     setWizard(null);
-    showToast(editId ? `اتحفظت تعديلات ${listingCode(editId)}` : `اتضاف ${listingCode(data)} واتنشر`);
+    showToast(editId ? `اتحفظت تعديلات ${codeOf(editId)}` : `اتضاف الإعلان رقم ${data} واتنشر`);
     await load();
     setHighlight(data);
     if (!editId) setTab('approved');
@@ -124,7 +125,7 @@ export default function Admin() {
     const q = toEnglishDigits(query).trim();
     if (/^(gb[-\s]?)?\d{1,6}$/i.test(q)) {
       const id = parseCode(q), x = listings.find((l) => l.id === id);
-      if (!x) return showToast(`مفيش إعلان بالكود ${listingCode(id)}.`);
+      if (!x) return showToast('مفيش إعلان بالكود ده.');
       setQuery(''); setTab(tabOf(x)); setHighlight(id); setConfirmDelete(null);
     }
   }
@@ -207,7 +208,7 @@ export default function Admin() {
                     <article key={r.id} className={`aitem${r.handled ? ' done' : ''}`}>
                       <div className="ahead">
                         <b>{r.name}</b>
-                        <span className="muted">طالب <span className="num">{listingCode(r.listing_id)}</span> · {fmtDate(r.created_at)}</span>
+                        <span className="muted">طالب <span className="num">{listingCode(listings.find((l) => l.id === r.listing_id) || r.listing_id)}</span> · {fmtDate(r.created_at)}</span>
                       </div>
                       <dl className="akv">
                         <dt>تليفونه</dt><dd><Phone value={r.phone} /></dd>
@@ -305,7 +306,7 @@ function ListingCard({ x, highlight, busy, confirming, onStatus, onEdit, onAskDe
     <article id={`card-${x.id}`} className={`aitem${highlight ? ' hl' : ''}`}>
       <div className="ahead">
         <b>{[x.zone || 'من غير تقسيم', x.district, x.neighborhood].filter(Boolean).join(' · ')}</b>
-        <span className="muted"><span className="num">{listingCode(x.id)}</span> · {fmtDate(x.created_at)}</span>
+        <span className="muted"><span className="num">{listingCode(x)}</span> · {fmtDate(x.created_at)}</span>
         <span className={`pill st-${x.status}`}>{STATUS[x.status]}</span>
       </div>
       <dl className="private">
@@ -315,7 +316,7 @@ function ListingCard({ x, highlight, busy, confirming, onStatus, onEdit, onAskDe
         <dt>رقم القطعة</dt><dd className="num">{x.plot_number || 'لسه متخصصتش'}</dd>
       </dl>
       {x.photo
-        ? <a className="a-photo" href={photoUrl(x.photo)} target="_blank" rel="noopener noreferrer"><img src={photoUrl(x.photo)} alt={`صورة ${listingCode(x.id)}`} loading="lazy" /></a>
+        ? <a className="a-photo" href={photoUrl(x.photo)} target="_blank" rel="noopener noreferrer"><img src={photoUrl(x.photo)} alt={`صورة ${listingCode(x)}`} loading="lazy" /></a>
         : <p className="muted a-nophoto">مفيش صورة للقطعة.</p>}
       <div className="amoney">
         <div><label>السعر الكلي</label><strong className="num">{money(b.price)}</strong></div>
@@ -344,7 +345,7 @@ function ListingCard({ x, highlight, busy, confirming, onStatus, onEdit, onAskDe
       )}
       {confirming ? (
         <div className="confirm">
-          متأكد إنك عايز تمسح {listingCode(x.id)} نهائي؟
+          متأكد إنك عايز تمسح {listingCode(x)} نهائي؟
           <button className="btn sm solid-danger" disabled={busy} onClick={onDelete}>أيوه امسح</button>
           <button className="btn sm" onClick={onCancelDelete}>لا</button>
         </div>

@@ -6,7 +6,6 @@ import {
   money, listingCode, normalizePhone, toEnglishDigits, statusLabel,
   breakdown, checkFor, legalCalc, LEGAL, addYears, fmtMonth, monthBefore,
 } from '@/lib/site';
-import { Explain } from './LegalCalc';
 import SheetTop from './SheetTop';
 import { uploadPhoto, photoUrl } from '@/lib/supabase';
 
@@ -256,7 +255,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
     b.inst?.left > 0 && 'الأقساط المتبقية',
     b.waiver > 0 && 'مصاريف التنازل',
   ].filter(Boolean);
-  const title = admin ? (editId ? `تعديل ${listingCode(editId)}` : 'إضافة إعلان') : 'اعرض قطعتك';
+  const title = admin ? (editId ? `تعديل ${listingCode(initial || editId)}` : 'إضافة إعلان') : 'اعرض قطعتك';
   const last = step === STEP_NAMES.length - 1;
 
   async function next(e) {
@@ -371,13 +370,6 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               <div className="pt rem-t"><span>المتبقي <small>تلقائي</small></span><b><i className="num">{money(b.remaining)}</i> ج</b>
                 <small>المطلوب دفعه ولكن لا يدفع (يدفعه المشتري لاحقاً)</small></div>
             </div>
-
-            {c && (
-              <details className="ex-wrap" open>
-                <summary>إزاي اتحسبت؟ <small>(شرح تقدر تقوله للعميل)</small></summary>
-                <Explain c={c} onPick={d.manual?.area_final ? null : (t) => set('tier', t)} />
-              </details>
-            )}
 
             <h4 className="pay-h">البنود</h4>
 

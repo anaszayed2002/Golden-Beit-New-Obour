@@ -35,13 +35,13 @@ export default function PlotCard({ x, onClose }) {
     ['الخدمات', services],
     ['الأوفر', Number(x.over_amount) > 0 ? <><span className="num">{money(x.over_amount)}</span> ج</> : ''],
   ].filter(([, v]) => v);
-  const msg = `السلام عليكم، أنا مهتم بالقطعة كود ${listingCode(x.id)}: ${placeOf(x)}، ${areaOf(x)} م²، السعر ${money(x.price)} جنيه.`;
+  const msg = `السلام عليكم، أنا مهتم بالقطعة كود ${listingCode(x)}: ${placeOf(x)}، ${areaOf(x)} م²، السعر ${money(x.price)} جنيه.`;
   return (
     <div className="modal center" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet narrow has-top pcard-sheet" role="dialog" aria-label={`بطاقة ${listingCode(x.id)}`}>
+      <div className="sheet narrow has-top pcard-sheet" role="dialog" aria-label={`بطاقة ${listingCode(x)}`}>
         <SheetTop title="بطاقة القطعة" onClose={onClose} />
         <article className="pcard">
-          {x.photo ? <img className="pc-photo" src={photoUrl(x.photo)} alt={`صورة القطعة ${listingCode(x.id)}`} /> : <Sketch x={x} />}
+          {x.photo ? <img className="pc-photo" src={photoUrl(x.photo)} alt={`صورة القطعة ${listingCode(x)}`} /> : <Sketch x={x} />}
           <dl>
             {rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
             <div className="pc-price"><dt>السعر الكلي</dt><dd><span className="num">{money(x.price)}</span> ج</dd></div>
@@ -49,7 +49,7 @@ export default function PlotCard({ x, onClose }) {
           <footer>
             <div className="pc-brand">
               <img src="/logo.png" alt="" />
-              <span><b>جولدن بيت</b><small className="num">{listingCode(x.id)}</small></span>
+              <span><b>جولدن بيت</b><small className="num">{listingCode(x)}</small></span>
             </div>
             <a className="pc-wa" href={waLink(msg)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon /><span className="num">{SITE.phone}</span></a>
           </footer>

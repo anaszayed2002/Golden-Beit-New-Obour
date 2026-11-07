@@ -770,3 +770,7 @@ table.cmp b { color: var(--forest); }
 .price-bubble p { max-width: min(280px, calc(100vw - 60px)); }
 .price-bubble { direction: ltr; }
 .price-bubble p { direction: rtl; }
+table.cmp .cmp-unit { white-space: nowrap; }
+table.cmp .cmp-unit .cmp-x { width: 24px; height: 24px; margin-inline-start: 6px; font-size: 11px; }
+table.cmp tbody .stick { color: var(--muted); font-weight: 600; font-size: .9em; }
+table.cmp td { text-align: center; min-width: 8em; }
