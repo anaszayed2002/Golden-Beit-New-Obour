@@ -300,7 +300,10 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
   return (
     <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <form className="sheet has-top wizard" ref={sheet} onSubmit={next} noValidate>
-        <SheetTop title={title} onClose={onClose} />
+        <div className="wz-head">
+          <SheetTop title={title} onClose={onClose} />
+          {step === 3 && <p className="pt-note" role="note">{PRICE_NOTE.split('، ').map((t, i, all) => <span key={i}>{t}{i < all.length - 1 ? '،' : ''}</span>)}</p>}
+        </div>
         <div className="steps" aria-hidden="true">
           {STEP_NAMES.map((n, i) => <i key={n} className={i < step ? 'done' : i === step ? 'on' : ''} />)}
         </div>
@@ -390,7 +393,6 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
         {step === 3 && (
           <div className="pay-step">
-            <p className="pt-note" role="note">{PRICE_NOTE.split('، ').map((t, i, all) => <span key={i}>{t}{i < all.length - 1 ? '،' : ''}</span>)}</p>
             <div className="ptotals mirror" aria-live="polite">
               <div className="pt hero-t">
                 <span>السعر الكلي <small>تلقائي</small></span>
@@ -404,18 +406,22 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                     {b.paid ? <b><i className="num">{money(b.paid)}</i> ج</b> : <b className="none">—</b>}
                     <small>الأوفر المطلوب + كل اللي دفعته</small>
                   </div>
-                  <button type="button" className="pt-over" onClick={() => { const el = document.getElementById('w-over'); el?.focus(); el?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }}>
-                    <span>الأوفر</span>
-                    <b><i className="num">{money(b.over)}</i> ج</b>
-                    <u>اضغط لكتابة الأوفر المطلوب</u>
-                  </button>
+                  <label className="pt-over" htmlFor="w-over">
+                    <span>الأوفر المطلوب <em>إجباري</em></span>
+                    <span className="pt-over-in">
+                      <input id="w-over" type="number" inputMode="numeric" min="0" placeholder="اكتب هنا" value={d.over_amount}
+                        onFocus={(e) => e.target.select()} onChange={(e) => set('over_amount', e.target.value)} />
+                      <i>ج</i>
+                    </span>
+                    <u>{d.over_amount !== '' ? <><b className="num">{money(num(d.over_amount))}</b> ج</> : 'اضغط لكتابة الأوفر المطلوب'}</u>
+                  </label>
                 </div>
-                <button type="button" className={`items-btn branch${itemsOpen ? ' on' : ''}`} aria-expanded={itemsOpen} aria-controls="w-items" onClick={toggleItems}>
-                  <b>البنود</b>
-                  <small>{itemsOpen ? 'اضغط لإخفاء البنود' : 'اضغط لإظهار البنود'}</small>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
-                </button>
                 <div className="pt rem-t branch">
+                  <button type="button" className={`items-btn${itemsOpen ? ' on' : ''}`} aria-expanded={itemsOpen} aria-controls="w-items" onClick={toggleItems}>
+                    <b>البنود</b>
+                    <small>{itemsOpen ? 'اضغط لإخفاء البنود' : 'اضغط لإظهار البنود'}</small>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
                   <span className="pt-lbl">المتبقي <small>تلقائي</small></span>
                   <b><i className="num">{money(b.remaining)}</i> ج</b>
                   <small>يدفعه المشتري لاحقاً (المتبقي من الاستكمال والأقساط، والشيك لو لم يتم دفعه)</small>
@@ -426,16 +432,6 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             {!c && (
               <p className="calc-off">الحساب التلقائي بيشتغل لما تكتب <b>أصل المساحة</b> (من {LEGAL.minArea} لأقل من {LEGAL.autoBelow} م²) في الخطوة التانية. غير كده اكتب الأرقام بنفسك.</p>
             )}
-            <div className="over-box">
-              <label htmlFor="w-over">الأوفر المطلوب <em>إجباري</em></label>
-              <p>المبلغ اللي عايزه فوق المدفوع، بالجنيه.</p>
-              <div className="over-in">
-                <input id="w-over" type="number" inputMode="numeric" min="0" placeholder="مثلاً 500000" value={d.over_amount} onFocus={(e) => e.target.select()} onChange={(e) => set('over_amount', e.target.value)} />
-                <span>جنيه</span>
-              </div>
-              {d.over_amount !== '' && <small className="num">{money(num(d.over_amount))} ج</small>}
-            </div>
-
             <section className={`items-sec${itemsOpen || error ? ' open' : ''}`} id="w-items" ref={itemsRef}>
               <h4 className="items-h"><span>البنود</span><small>شيك التقنين · مصاريف التنازل · الاستكمال · الأقساط</small></h4>
               {(itemsOpen || !!error) && (

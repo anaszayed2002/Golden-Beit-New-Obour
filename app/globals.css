@@ -934,3 +934,32 @@ table.cmp td { text-align: center; min-width: 8em; }
 .pitem .field input, .pitem .field select { background: #ffffffd9; }
 .pitem .pi-note { background: #ffffffa6; }
 .pi-body:empty { display: none; }
+
+/* v20: note pinned with the header; over typed in place; البنود box on the left corner of المتبقي */
+.wz-head { position: sticky; top: 0; z-index: 3; background: var(--panel); }
+.wz-head .sheet-top { position: static; }
+.wz-head .pt-note { margin: 0 0 8px; box-shadow: none; position: static; }
+.pt-over { cursor: text; min-width: 140px; max-width: 46%; gap: 3px; }
+.pt-over > span:first-child { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--gold-ink); font-weight: 700; }
+.pt-over em { font-style: normal; font-size: 10px; background: var(--forest); color: #fff; border-radius: 99px; padding: 0 7px; }
+.pt-over-in { display: flex; align-items: center; gap: 6px; background: #fff; border-radius: 10px; padding: 0 10px; border: 1.5px solid #e6c46a; }
+.pt-over-in:focus-within { border-color: var(--forest); }
+.pt-over-in input { flex: 1; min-width: 0; width: 100%; border: 0; background: none; padding: 7px 0; font: inherit; font-size: 17px; font-weight: 800; color: var(--forest); outline: none; }
+.pt-over-in input::placeholder { color: #c4b68c; font-weight: 600; font-size: 14px; }
+.pt-over-in i { font-style: normal; font-weight: 700; color: var(--gold-ink); }
+.pt-over u { font-size: 11px; }
+.pt-over u b { font-size: 12px !important; }
+.pt-tree .rem-t { padding-top: 16px; }
+.items-btn { position: absolute; top: -14px; left: 12px; z-index: 2; align-self: auto; padding: 6px 12px; border-radius: 12px; column-gap: 8px; }
+.items-btn b { font-size: 14px; }
+.items-btn small { font-size: 10.5px; }
+.items-btn svg { width: 18px; height: 18px; }
+.paid-split { grid-template-columns: minmax(0, 1fr) 138px; }
+.pt-over { width: 100%; min-width: 0; max-width: none; box-sizing: border-box; }
+.pt-over-in input { width: 0; }
+.items-btn { line-height: 1.25; padding: 6px 10px; top: -16px; }
+.items-btn b { font-size: 13.5px; font-family: inherit; }
+.pt-over-in { align-self: stretch; }
+.pt-over > span:first-child { white-space: nowrap; font-size: 11.5px; gap: 4px; }
+.pt-over { padding: 8px 10px; }
+.ptotals.mirror .pt .items-btn b { font-size: 14px; color: inherit; }
