@@ -354,12 +354,25 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
   const received = d.land_status === RECEIVED_STATUS;
   const checkUnpaid = d.land_status === CHECK_UNPAID_STATUS;
   // Names (no amounts) of what makes up المتبقي, for the quick review.
+  // For the quick review: item names (no amounts) on each side, and whether each amount is automatic or typed by the client.
+  const src = {
+    check: checkFor(num(d.area_orig)) != null ? 'auto' : 'client',
+    comp: c && !d.manual?.completion ? 'auto' : 'client',
+    inst: c && !d.manual?.inst ? 'auto' : 'client',
+  };
   const remItems = [
-    b.check > 0 && !b.checkPaid && 'شيك التقنين',
-    b.comp > 0 && !b.compPaid && 'دفعة الاستكمال',
-    b.inst?.left > 0 && 'الأقساط المتبقية',
-    b.waiver > 0 && 'مصاريف التنازل',
+    b.check > 0 && !b.checkPaid && ['شيك التقنين', src.check],
+    b.comp > 0 && !b.compPaid && ['دفعة الاستكمال', src.comp],
+    b.inst?.left > 0 && ['الأقساط المتبقية', src.inst],
+    b.waiver > 0 && ['مصاريف التنازل', 'auto'],
   ].filter(Boolean);
+  const paidItems = [
+    b.over > 0 && ['الأوفر', 'client'],
+    b.check > 0 && b.checkPaid && ['شيك التقنين', src.check],
+    b.comp > 0 && b.compPaid && ['دفعة الاستكمال', src.comp],
+    b.inst?.paid > 0 && ['الأقساط المدفوعة', src.inst],
+  ].filter(Boolean);
+  const srcTag = (k) => <small className={`src-tag ${k}`}>{k === 'auto' ? 'تلقائي' : 'كتبها العميل'}</small>;
   const title = admin ? (editId ? `تعديل ${listingCode(initial || editId)}` : 'إضافة إعلان') : 'اعرض قطعتك';
   const last = step === STEP_NAMES.length - 1;
 
@@ -586,9 +599,20 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                 <dt>المكان</dt><dd>{[SITE.governorate, d.zone, d.district, d.neighborhood].filter(Boolean).join(' · ')}</dd>
                 <dt>المساحة</dt><dd><span className="num">{area}</span> م²{num(d.area_orig) && num(d.area_orig) !== area ? <small className="muted"> (أصلها <span className="num">{num(d.area_orig)}</span> م²)</small> : null}</dd>
                 <dt>الحالة</dt><dd>{statusLabel(d.land_status)}</dd>
-                <dt>إجمالي المتبقي</dt><dd><b className="num">{money(b.remaining)} ج.م</b>
-                  {remItems.length > 0 && <ul className="rem-items">{remItems.map((t) => <li key={t}>{t}</li>)}</ul>}</dd>
-              </dl></div>
+                <dt>السعر الكلي</dt><dd><b className="num">{money(b.price)} ج.م</b></dd>
+              </dl>
+              <div className="rv-cols">
+                <div className="rv-col rem">
+                  <span>المتبقي</span>
+                  <b className="num">{money(b.remaining)} ج.م</b>
+                  {remItems.length > 0 ? <ul>{remItems.map(([t, k]) => <li key={t}>{t} {srcTag(k)}</li>)}</ul> : <small className="muted">مفيش</small>}
+                </div>
+                <div className="rv-col paid">
+                  <span>المدفوع</span>
+                  <b className="num">{money(b.paid)} ج.م</b>
+                  {paidItems.length > 0 ? <ul>{paidItems.map(([t, k]) => <li key={t}>{t} {srcTag(k)}</li>)}</ul> : <small className="muted">مفيش</small>}
+                </div>
+              </div></div>
           </div>
         )}
 

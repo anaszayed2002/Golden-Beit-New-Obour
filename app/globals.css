@@ -1057,3 +1057,19 @@ table.cmp td { text-align: center; min-width: 8em; }
 .pi-body > .field { display: flex; flex-direction: column; gap: 6px; }
 .pi-body > .inst-split::before { height: 30px; }
 .pi-body > *::before, .pi-body > *:not(:last-child)::after { border-color: #8fa89c; }
+
+/* v28: quick review: total + two columns (remaining / paid) with item names and where each amount came from */
+.rv-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.rv-col { border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rv-col.rem { background: #fbf4e1; }
+.rv-col.paid { background: #e9f3ee; }
+.rv-col > span { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+.rv-col > b { font-size: 16px; }
+.rv-col.rem > b { color: var(--rem); }
+.rv-col.paid > b { color: var(--paid); }
+.rv-col ul { margin: 6px 0 0; padding-inline-start: 16px; font-size: 12.5px; line-height: 1.9; color: var(--forest); }
+.rv-col.rem li::marker { color: var(--rem); }
+.rv-col.paid li::marker { color: var(--paid); }
+.src-tag { font-size: 10px; border-radius: 99px; padding: 0 6px; white-space: nowrap; font-weight: 700; }
+.src-tag.auto { background: #fff; color: var(--paid); }
+.src-tag.client { background: #fff; color: var(--gold-ink); }
