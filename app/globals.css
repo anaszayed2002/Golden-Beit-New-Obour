@@ -774,3 +774,11 @@ table.cmp .cmp-unit { white-space: nowrap; }
 table.cmp .cmp-unit .cmp-x { width: 24px; height: 24px; margin-inline-start: 6px; font-size: 11px; }
 table.cmp tbody .stick { color: var(--muted); font-weight: 600; font-size: .9em; }
 table.cmp td { text-align: center; min-width: 8em; }
+
+/* price note: a fixed, always-open bubble next to the prices */
+.price-note { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 12px; padding: 12px 14px; border-radius: 16px;
+  background: var(--cream); border: 1.5px solid #e6c46a; color: var(--gold-ink); font-size: 13.5px; line-height: 1.8; font-weight: 600; }
+.price-note .pn-ic { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--gold); color: #2a1f04; display: grid; place-items: center; font-size: 14px; margin-top: 2px; }
+.price-note.compact { font-size: 12.5px; padding: 10px 12px; border-radius: 14px; }
+.pcard .price-note { margin: 0 14px 14px; }
+.drawer .price-note, .pay-step .price-note { margin: 0; }

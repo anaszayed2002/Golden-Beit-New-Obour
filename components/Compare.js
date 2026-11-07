@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { money, listingCode, areaOf, placeOf, statusLabel, remainingOf, hasPayment, breakdown } from '@/lib/site';
 import SheetTop from './SheetTop';
+import { PriceNote } from './LegalCalc';
 
 const ZOOMS = [0.7, 0.85, 1, 1.15, 1.3, 1.5];
 const m = (v) => (v ? <><span className="num">{money(v)}</span> ج</> : '—');
@@ -29,6 +30,7 @@ export default function Compare({ items, onRemove, onClear, onOpen, onClose }) {
     <div className="modal cmp-modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sheet has-top cmp-sheet" role="dialog" aria-label="قارن القطع">
         <SheetTop title={<>قارن القطع <small className="num">({items.length})</small></>} onClose={onClose} />
+        <PriceNote compact />
         <div className="cmp-tools">
           <div className="zoom" role="group" aria-label="تكبير وتصغير">
             <button type="button" onClick={() => setZ((v) => Math.max(0, v - 1))} disabled={z === 0} aria-label="تصغير">−</button>

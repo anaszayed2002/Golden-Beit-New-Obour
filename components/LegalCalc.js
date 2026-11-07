@@ -63,6 +63,16 @@ export function CalcModal({ onClose }) {
   );
 }
 
+// The price note, always open, placed right where prices are shown.
+export function PriceNote({ compact }) {
+  return (
+    <p className={`price-note${compact ? ' compact' : ''}`} role="note">
+      <span className="pn-ic" aria-hidden="true">ⓘ</span>
+      <span>{PRICE_NOTE}</span>
+    </p>
+  );
+}
+
 // Always-visible bubble on the left edge; tap to read the full note.
 export function PriceBubble() {
   const [open, setOpen] = useState(false);

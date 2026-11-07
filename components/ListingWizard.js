@@ -7,6 +7,7 @@ import {
   breakdown, checkFor, legalCalc, LEGAL, addYears, fmtMonth, monthBefore,
 } from '@/lib/site';
 import SheetTop from './SheetTop';
+import { PriceNote } from './LegalCalc';
 import { uploadPhoto, photoUrl } from '@/lib/supabase';
 
 const STEP_NAMES = ['المكان', 'المساحة والحالة', 'المميزات والصورة', 'السعر والدفع', 'البيانات'];
@@ -370,6 +371,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               <div className="pt rem-t"><span>المتبقي <small>تلقائي</small></span><b><i className="num">{money(b.remaining)}</i> ج</b>
                 <small>المطلوب دفعه ولكن لا يدفع (يدفعه المشتري لاحقاً)</small></div>
             </div>
+            <PriceNote />
 
             <h4 className="pay-h">البنود</h4>
 
