@@ -982,3 +982,7 @@ table.cmp td { text-align: center; min-width: 8em; }
 .sp-list { position: absolute; z-index: 6; left: 0; right: 0; bottom: calc(100% + 6px); background: #ecebe6; box-shadow: 0 -12px 26px -14px #0A302266, 0 0 0 1px #dcdad2; animation: dropup .2s ease-out; }
 .sp-list button:hover, .sp-list button.on { background: #dcdad2; }
 @keyframes dropup { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* v23: month + year lists instead of the phone date wheel */
+.month-pick { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; }
+.month-pick select { min-width: 0; }
