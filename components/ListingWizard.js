@@ -228,18 +228,21 @@ function Money({ id, label, value, onChange, full, tag }) {
   return (
     <div className={`field${full ? ' full' : ''}`}>
       <label htmlFor={id}>{label} {tag}</label>
-      <input id={id} type="number" inputMode="numeric" min="0" value={value} onChange={(e) => onChange(e.target.value)} />
+      <input id={id} type="number" inputMode="decimal" min="0" value={value} onFocus={(e) => e.target.select()} onChange={(e) => onChange(e.target.value)} />
       <span className="hint num">{value ? `${money(num(value))} ج` : ''}</span>
     </div>
   );
 }
 
-function Month({ id, label, value, onChange, disabled, placeholder }) {
+function Month({ id, label, value, onChange, disabled, placeholder, clearable }) {
   return (
-    <div className="field"><label htmlFor={id}>{label}</label>
+    <div className="field"><label htmlFor={id}>{label}
+      {clearable && value && <button type="button" className="auto-reset" onClick={() => onChange('')}>غير محدد</button>}</label>
       {disabled
         ? <input id={id} disabled placeholder={placeholder} />
-        : <input id={id} type="month" value={value} onChange={(e) => onChange(e.target.value)} />}
+        : clearable && !value
+          ? <span className="month-empty"><input id={id} type="month" value="" onChange={(e) => onChange(e.target.value)} /><i>غير محدد</i></span>
+          : <input id={id} type="month" value={value} onChange={(e) => onChange(e.target.value)} />}
       <span className="hint">{!disabled && value ? fmtMonth(value) : ''}</span>
     </div>
   );
@@ -330,10 +333,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               <>
                 <TierSlider value={c.tier} suggested={legalCalc(num(d.area_orig)).tier} onChange={(t) => set('tier', t)} />
                 <div className="full area-calc">
-                  <span>خصم <b className="num">{c.cutPct * 100}%</b> للطرق ← صافي <b className="num">{c.net}</b> م²
-                    {c.missing > 0 && <> ← ناقص <b className="num">{c.missing}</b> م² هتشتريهم</>}
-                    {c.extra > 0 && <> ← زيادة <b className="num">{c.extra}</b> م² هتبيعهم</>}
-                  </span>
+                  <span>الصافي بعد الطرق <b className="num">{c.net}</b> م²</span>
                   <span className="muted">الشريحة بتتحدد على الصافي بعد خصم الطرق، مش على أصل المساحة.</span>
                   {c.options.length > 1 && (
                     <div className="tier-choice">
@@ -343,7 +343,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                         return (
                           <button key={t} type="button" aria-pressed={c.tier === t} onClick={() => set('tier', t)}>
                             <b className="num">{t}</b> م²
-                            <small>{t > c.net ? <>تشتري <span className="num">{diff}</span> م² × 3,000</> : <>تبيع <span className="num">{diff}</span> م² × 700</>}</small>
+                            <small>{t > c.net ? <>تشتري <span className="num">{diff}</span> م²</> : <>تبيع <span className="num">{diff}</span> م²</>}</small>
                           </button>
                         );
                       })}
@@ -400,10 +400,9 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             </div>
 
             <div className="ptotals" aria-live="polite">
-              <div className="pt hero-t"><span>السعر الكلي <small>تلقائي</small></span><b><i className="num">{money(b.price)}</i> ج</b><small>المطلوب دفعه + المتبقي</small></div>
+              <div className="pt hero-t"><span>السعر الكلي <small>تلقائي</small></span><b><i className="num">{money(b.price)}</i> ج</b></div>
               <div className="pt paid-t"><span>المطلوب دفعه <small>تلقائي</small></span>
-                {b.paid ? <b><i className="num">{money(b.paid)}</i> ج</b> : <b className="none">—</b>}
-                <small>المبلغ الذي دفعته فعلياً + شيك التقنين + الأوفر</small></div>
+                {b.paid ? <b><i className="num">{money(b.paid)}</i> ج</b> : <b className="none">—</b>}</div>
               <div className="pt"><span>الأوفر</span><b><i className="num">{money(b.over)}</i> ج</b><small>بيتضاف على المطلوب دفعه</small></div>
               <div className="pt rem-t"><span>المتبقي <small>تلقائي</small></span><b><i className="num">{money(b.remaining)}</i> ج</b>
                 <small>المطلوب دفعه ولكن لا يدفع (يدفعه المشتري لاحقاً)</small></div>
@@ -420,25 +419,25 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             </PayItem>
 
             <PayItem title="مصاريف التنازل" amount={b.waiver} route={b.waiver ? 'rem' : ''}
-              hint={area ? `${WAIVER_PER_M} ج × ${area} م² (المساحة بعد التقنين)` : ''}>
+              >
               {!area && <p className="pi-note">بتتحسب لوحدها من المساحة.</p>}
             </PayItem>
 
-            <PayItem title="دفعة الاستكمال" amount={b.comp || null} route={b.comp ? (b.compPaid ? 'paid' : 'rem') : ''} hint={c ? 'ربع التكلفة − شيك التقنين، وبتتدفع بالفيزا' : 'سيبها فاضية لو مفيش'}>
+            <PayItem title="دفعة الاستكمال" amount={b.comp || null} route={b.comp ? (b.compPaid ? 'paid' : 'rem') : ''} hint={c ? 'بتتدفع بالفيزا' : 'سيبها فاضية لو مفيش'}>
               <div className="grid">
                 <Money id="w-comp" label="قيمة الاستكمال (جنيه)" tag={tag('completion')}
                   value={c && !d.manual?.completion ? e.completion : d.pay.completion}
                   onChange={(v) => edit('completion', (s) => ({ ...s, pay: { ...s.pay, completion: v } }))} />
-                <p className="pi-note full">{d.land_status >= COMPLETED_STATUS
+                {(d.land_status >= COMPLETED_STATUS || !d.land_status) && <p className="pi-note full">{d.land_status >= COMPLETED_STATUS
                   ? 'القطعة مستكملة، فالاستكمال اتدفع وبيروح للمطلوب دفعه.'
-                  : d.land_status ? 'القطعة لسه مش مستكملة، فالاستكمال لسه هيتدفع وبيروح للمتبقي.' : 'اختار الحالة علشان يتحدد الاستكمال مدفوع ولا لأ.'}</p>
+                  : 'اختار الحالة علشان يتحدد الاستكمال مدفوع ولا لأ.'}</p>}
                 {d.land_status < COMPLETED_STATUS && (
-                  <Month id="w-compdue" label="موعد الاستكمال" value={d.pay.completion_due} onChange={(v) => setPay('completion_due', v)} />
+                  <Month id="w-compdue" clearable label="موعد الاستكمال" value={d.pay.completion_due} onChange={(v) => setPay('completion_due', v)} />
                 )}
               </div>
             </PayItem>
 
-            <PayItem title="الأقساط" amount={b.inst ? b.inst.value * INST_COUNT : null} hint={c ? '3 أقساط، كل قسط = ربع التكلفة' : 'سيبها فاضية لو مفيش أقساط'}>
+            <PayItem title="الأقساط" amount={b.inst ? b.inst.value * INST_COUNT : null} hint={c ? '3 أقساط' : 'سيبها فاضية لو مفيش أقساط'}>
               <div className="grid">
                 <Money id="w-iv" label="قيمة القسط" tag={tag('inst')}
                   value={c && !d.manual?.inst ? e.instValue : d.pay.inst.value}
@@ -456,7 +455,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                   <div className="rem-t"><span>متبقية <small>تلقائي</small></span><b><i className="num">{b.inst.leftN}</i> قسط · <i className="num">{money(b.inst.left)}</i> ج</b></div>
                 </div>
               )}
-              {b.inst && !received && <p className="pi-note">القطعة مش مستلمة، فالأقساط كلها بتروح للمتبقي.</p>}
+              {b.inst && !received && <p className="pi-note">أول قسط يتم دفعه بعد سنة من موعد الاستكمال.</p>}
             </PayItem>
           </div>
         )}

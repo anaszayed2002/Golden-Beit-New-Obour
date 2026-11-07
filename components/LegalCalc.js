@@ -93,12 +93,13 @@ const SEAL_PTS = Array.from({ length: 48 }, (_, i) => {
   return `${(50 + r * Math.cos(ang)).toFixed(2)},${(50 + r * Math.sin(ang)).toFixed(2)}`;
 }).join(' ');
 
-// A gold seal fixed on the left edge while scrolling; tap it to read the full note.
+// A gold seal fixed on the left edge, with the full note as a faint watermark behind the page.
 export function PriceSeal() {
-  const [open, setOpen] = useState(false);
   return (
-    <div className={`price-seal${open ? ' open' : ''}`}>
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="الأسعار استرشادية، اضغط للتفاصيل">
+    <>
+    <p className="price-watermark" role="note">{PRICE_NOTE}</p>
+    <div className="price-seal">
+      <span className="seal-badge" aria-hidden="true">
         <svg viewBox="0 0 100 118" aria-hidden="true">
           <polygon points="30,74 22,114 36,104 46,116 50,80" fill="#8a1f1f" />
           <polygon points="70,74 78,114 64,104 54,116 50,80" fill="#a52a2a" />
@@ -114,8 +115,8 @@ export function PriceSeal() {
             </linearGradient>
           </defs>
         </svg>
-      </button>
-      {open && <p role="note">{PRICE_NOTE}</p>}
+      </span>
     </div>
+    </>
   );
 }
