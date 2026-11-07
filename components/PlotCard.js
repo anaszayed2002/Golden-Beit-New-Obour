@@ -1,7 +1,6 @@
 'use client';
 import { SITE, money, listingCode, areaOf, placeOf, waLink } from '@/lib/site';
 import SheetTop from './SheetTop';
-import { PriceNote } from './LegalCalc';
 import { photoUrl } from '@/lib/supabase';
 import { WhatsAppIcon } from './icons';
 
@@ -47,7 +46,6 @@ export default function PlotCard({ x, onClose }) {
             {rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
             <div className="pc-price"><dt>السعر الكلي</dt><dd><span className="num">{money(x.price)}</span> ج</dd></div>
           </dl>
-          <PriceNote compact />
           <footer>
             <div className="pc-brand">
               <img src="/logo.png" alt="" />

@@ -352,6 +352,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
         {step === 3 && (
           <div className="pay-step">
+            <PriceNote />
             <div className="over-box">
               <label htmlFor="w-over">الأوفر المطلوب <em>إجباري</em></label>
               <p>المبلغ اللي عايزه فوق المدفوع، بالجنيه.</p>
@@ -371,7 +372,6 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               <div className="pt rem-t"><span>المتبقي <small>تلقائي</small></span><b><i className="num">{money(b.remaining)}</i> ج</b>
                 <small>المطلوب دفعه ولكن لا يدفع (يدفعه المشتري لاحقاً)</small></div>
             </div>
-            <PriceNote />
 
             <h4 className="pay-h">البنود</h4>
 

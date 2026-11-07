@@ -9,7 +9,6 @@ import {
 import StopRange from './StopRange';
 import PlotCard from './PlotCard';
 import Compare from './Compare';
-import { PriceNote } from './LegalCalc';
 
 // "—" instead of a misleading 0 when a listing has no paid/over amount.
 const Amount = ({ x, value, className, unit = 'ج' }) => (hasPayment(x)
@@ -273,7 +272,6 @@ export default function Market() {
           </div>
         ) : (
           <>
-            <PriceNote />
             <div className="tablebox listings"><table>
               <thead><tr>
                 <th>الكود</th><th>المكان</th><th>المساحة</th><th>الحالة</th><th>السعر الكلي</th><th>المطلوب دفعه</th><th>المتبقي</th>
@@ -441,7 +439,6 @@ function Drawer({ item: x, zone, onClose, onCard, inCompare, onCompare }) {
           {Number(x.over_amount) > 0 && hasPayment(x) && <div><label>الأوفر</label><strong><span className="num">{money(x.over_amount)}</span> ج</strong></div>}
           {remainingOf(x) > 0 && <div><label>المتبقي</label><strong><span className="num">{money(remainingOf(x))}</span> ج</strong></div>}
         </div>
-        <PriceNote />
         <div className="sec-title">بيانات القطعة</div>
         <dl className="kv">
           <dt>المكان</dt><dd>{[SITE.governorate, x.zone, x.district, x.neighborhood].filter(Boolean).join(' · ')}</dd>
