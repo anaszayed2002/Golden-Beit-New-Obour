@@ -9,6 +9,7 @@ import {
 import StopRange from './StopRange';
 import PlotCard from './PlotCard';
 import Compare from './Compare';
+import { CalcModal, PriceBubble } from './LegalCalc';
 
 // "—" instead of a misleading 0 when a listing has no paid/over amount.
 const Amount = ({ x, value, className, unit = 'ج' }) => (hasPayment(x)
@@ -169,6 +170,10 @@ export default function Market() {
             <button className="btn" type="submit">افتح</button>
           </form>
           <div className="code-msg" role="status">{codeMsg}</div>
+          <button type="button" className="calc-link" onClick={() => setModal('calc')}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2.5" /><path d="M8.5 7h7M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h7" /></svg>
+            احسب تكلفة تقنين أرضك
+          </button>
         </div>
       </section>
 
@@ -378,6 +383,10 @@ export default function Market() {
       )}
 
       {cardOf && <PlotCard x={cardOf} onClose={() => setCardOf(null)} />}
+
+      {modal === 'calc' && <CalcModal onClose={() => setModal(null)} />}
+
+      <PriceBubble />
 
       {modal === 'offer' && (
         <ListingWizard mode="public" onClose={() => setModal(null)} onSubmit={submitOffer} />

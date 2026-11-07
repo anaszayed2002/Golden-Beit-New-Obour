@@ -1,0 +1,77 @@
+'use client';
+import { useState } from 'react';
+import { LEGAL, PRICE_NOTE, legalCalc, exact, toEnglishDigits } from '@/lib/site';
+import SheetTop from './SheetTop';
+
+const j = (n) => <><b className="num">{exact(n)}</b> ج</>;
+const m2 = (n) => <><b className="num">{exact(n)}</b> م²</>;
+
+// The legalization cost explained step by step, in the words a broker would use with a client.
+export function Explain({ c, onPick }) {
+  if (!c) return null;
+  return (
+    <ol className="explain">
+      <li><span className="ex-n">١</span><div>أصل مساحة الأرض {m2(c.a)}.</div></li>
+      <li><span className="ex-n">٢</span><div>الجهاز بيخصم <b className="num">{c.cutPct * 100}%</b> للطرق والخدمات = {m2(c.cut)}، فيفضل لك <strong>صافي {m2(c.net)}</strong>.</div></li>
+      <li><span className="ex-n">٣</span><div>
+        {c.missing > 0 && <>أقرب شريحة رسمية ليك {m2(c.tier)}، يعني ناقصك {m2(c.missing)} بتشتريهم من الجهاز بـ {j(LEGAL.buyPerM)} للمتر = {j(c.missing * LEGAL.buyPerM)}.</>}
+        {c.extra > 0 && <>أقرب شريحة رسمية ليك {m2(c.tier)}، يعني عندك {m2(c.extra)} زيادة بتبيعهم للجهاز بـ {j(LEGAL.sellPerM)} للمتر = {j(c.extra * LEGAL.sellPerM)} بتتخصم من التكلفة.</>}
+        {!c.missing && !c.extra && <>صافيك بيساوي شريحة {m2(c.tier)} بالظبط، مفيش أمتار تشتريها أو تبيعها.</>}
+        {c.options.length > 1 && onPick && (
+          <div className="ex-pick">
+            <span>مساحتك في النص تقريباً بين شريحتين، اختار:</span>
+            {c.options.map((t) => <button key={t} type="button" aria-pressed={c.tier === t} onClick={() => onPick(t)}><span className="num">{t}</span> م²</button>)}
+          </div>
+        )}
+      </div></li>
+      <li><span className="ex-n">٤</span><div>تقنين الصافي: {m2(c.net)} × {j(c.perM)} للمتر = {j(c.legal)}.</div></li>
+      <li><span className="ex-n">٥</span><div>إجمالي التكلفة {j(c.total)} + <b className="num">1.5%</b> مصاريف إدارية ({j(c.admin)}) = <strong>{j(c.grand)}</strong>.</div></li>
+      <li><span className="ex-n">٦</span><div>المبلغ ده بيتقسم على <b>4 دفعات متساوية</b>، كل دفعة {j(c.quarter)}:
+        <ul>
+          <li><b>الدفعة الأولى:</b> شيك تقنين {j(c.check)} + {j(c.completion)} بالفيزا (دي دفعة الاستكمال).</li>
+          <li><b>بعدها 3 أقساط:</b> 3 شيكات، كل شيك {j(c.quarter)}، بتتكتب قبل استلام الأرض.</li>
+        </ul>
+      </div></li>
+      <li><span className="ex-n">٧</span><div>ومصاريف التنازل: {j(180)} × {m2(c.tier)} = {j(c.waiver)}.</div></li>
+    </ol>
+  );
+}
+
+// Stand-alone calculator: type the original area and read the explanation.
+export function CalcModal({ onClose }) {
+  const [a, setA] = useState('');
+  const [tier, setTier] = useState('');
+  const n = Number(toEnglishDigits(a));
+  const c = legalCalc(n, tier);
+  return (
+    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="sheet has-top calc-sheet" role="dialog" aria-label="حاسبة التقنين">
+        <SheetTop title="حاسبة تكلفة التقنين" onClose={onClose} />
+        <p className="sub">اكتب أصل مساحة الأرض، وهنطلعلك التكلفة خطوة بخطوة.</p>
+        <div className="over-in calc-in">
+          <input type="number" inputMode="decimal" min="0" placeholder="مثلاً 300" value={a} autoFocus
+            onChange={(e) => { setA(e.target.value); setTier(''); }} aria-label="أصل المساحة بالمتر" />
+          <span>م²</span>
+        </div>
+        {a && !c && (
+          <p className="pi-note">{n < LEGAL.minArea ? `أقل مساحة ${LEGAL.minArea} م².` : 'حسبة المساحات من 500 م² وطالع لسه بتتراجع. كلمنا على واتساب وهنحسبهالك.'}</p>
+        )}
+        <Explain c={c} onPick={setTier} />
+        <p className="price-note-inline">{PRICE_NOTE}</p>
+      </div>
+    </div>
+  );
+}
+
+// Always-visible bubble on the left edge; tap to read the full note.
+export function PriceBubble() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`price-bubble${open ? ' open' : ''}`}>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span aria-hidden="true">ⓘ</span> {open ? 'إخفاء' : 'الأسعار استرشادية'}
+      </button>
+      {open && <p role="note">{PRICE_NOTE}</p>}
+    </div>
+  );
+}

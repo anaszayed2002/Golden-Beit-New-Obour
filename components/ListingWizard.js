@@ -4,8 +4,9 @@ import {
   SITE, STATUSES, FACADES, VIEWS, PHONE_RE, RECEIVED_STATUS, WAIVER_PER_M, DISTRICTS, NEIGHBORHOODS,
   INST_COUNT, BUILD_YEARS, CHECK_UNPAID_STATUS, NOT_ALLOCATED,
   money, listingCode, normalizePhone, toEnglishDigits, statusLabel,
-  breakdown, checkByArea, addYears, fmtMonth, monthBefore,
+  breakdown, checkFor, legalCalc, LEGAL, addYears, fmtMonth, monthBefore,
 } from '@/lib/site';
+import { Explain } from './LegalCalc';
 import SheetTop from './SheetTop';
 import { uploadPhoto, photoUrl } from '@/lib/supabase';
 
@@ -14,7 +15,7 @@ const STEP_NAMES = ['المكان', 'المساحة والحالة', 'الممي
 const blank = () => ({
   zone: '', district: '', neighborhood: '', block: '', plot_number: '',
   area_orig: '', area_final: '', land_status: 0, facade: '', view_type: '', received: '',
-  over_amount: '', check_manual: '', photo: '',
+  over_amount: '', check_manual: '', photo: '', tier: '', manual: {},
   pay: { completion: '', completion_paid: false, completion_due: '', inst: { value: '', first: '', last: '' } },
   description: '', owner_name: '', contact_phone: '',
 });
@@ -22,7 +23,6 @@ const blank = () => ({
 function fromListing(x) {
   const p = x.pay || {};
   const v5 = p.v === 5;
-  const area = Number(x.area_final || x.area || x.area_orig || 0);
   // Imported listings only have a total price: keep it by treating it as الأوفر until the real numbers are typed.
   const legacyOver = !v5 && !Number(x.over_amount) ? Math.max(0, Number(x.price || 0) - Number(x.paid || 0)) : 0;
   return {
@@ -33,7 +33,9 @@ function fromListing(x) {
     land_status: x.land_status || 0, facade: x.facade || '', view_type: x.view_type || '',
     received: p.received || '',
     over_amount: x.over_amount || legacyOver || '',
-    check_manual: p.check && checkByArea(area) == null ? p.check : '',
+    check_manual: p.check || '',
+    // A saved listing keeps its own numbers; the admin can switch any of them back to the automatic calculation.
+    manual: { area_final: true, check: true, completion: true, inst: true },
     pay: {
       completion: p.completion || '', completion_paid: !!p.completion_paid, completion_due: p.completion_due || '',
       inst: { value: p.inst?.value || '', first: p.inst?.first || '', last: p.inst?.last || '' },
@@ -44,35 +46,48 @@ function fromListing(x) {
 }
 
 const num = (v) => (v === '' || v == null ? '' : Number(toEnglishDigits(v)));
-const areaIn = (d) => num(d.area_final) || num(d.area_orig) || 0;
+// The numbers the form uses: the calculation from أصل المساحة, unless the seller typed their own.
+function eff(d) {
+  const a = num(d.area_orig) || 0;
+  const calc = legalCalc(a, d.tier);
+  const auto = (k) => calc && !d.manual?.[k];
+  const area_final = auto('area_final') ? calc.tier : (num(d.area_final) || a || 0);
+  const check = d.manual?.check || checkFor(a) == null ? (num(d.check_manual) || 0) : checkFor(a);
+  return {
+    calc, area_final, check,
+    completion: auto('completion') ? calc.completion : (num(d.pay.completion) || 0),
+    instValue: auto('inst') ? calc.instValue : (num(d.pay.inst.value) || 0),
+  };
+}
 
 // The listing as it will be saved; breakdown() works out every automatic box from it.
 function asListing(d) {
   const received = d.land_status === RECEIVED_STATUS;
-  const area = areaIn(d);
+  const e = eff(d);
+  const area = e.area_final;
   const pay = { v: 5 };
-  pay.check = checkByArea(area) ?? (num(d.check_manual) || 0);
-  pay.waiver = Math.round(area * WAIVER_PER_M);
+  pay.check = e.check;
+  pay.waiver = area * WAIVER_PER_M;
   if (received && d.received) pay.received = d.received;
   // دفعة الاستكمال and الأقساط count once they have a value.
-  if (num(d.pay.completion) > 0) {
+  if (e.completion > 0) {
     const paid = !!d.pay.completion_paid && !NOT_ALLOCATED.includes(d.land_status);
-    pay.completion = num(d.pay.completion) || 0;
+    pay.completion = e.completion;
     pay.completion_paid = paid;
     if (!paid && d.pay.completion_due) pay.completion_due = d.pay.completion_due;
   }
-  if (num(d.pay.inst.value) > 0) {
-    pay.inst = { value: num(d.pay.inst.value) || 0, count: INST_COUNT };
+  if (e.instValue > 0) {
+    pay.inst = { value: e.instValue, count: INST_COUNT };
     if (received) { pay.inst.first = d.pay.inst.first || ''; pay.inst.last = d.pay.inst.last || ''; }
   }
-  return { land_status: d.land_status, area_final: num(d.area_final), area_orig: num(d.area_orig), over_amount: num(d.over_amount) || 0, pay };
+  return { land_status: d.land_status, area_final: area, area_orig: num(d.area_orig), over_amount: num(d.over_amount) || 0, pay };
 }
 
 function toPayload(d) {
   const l = asListing(d), b = breakdown(l);
   return {
     zone: d.zone, district: d.district.trim(), neighborhood: d.neighborhood.trim(), block: d.block.trim(),
-    plot_number: d.plot_number.trim(), area_orig: num(d.area_orig), area_final: num(d.area_final),
+    plot_number: d.plot_number.trim(), area_orig: num(d.area_orig), area_final: eff(d).area_final,
     land_status: d.land_status, facade: d.facade, view_type: d.view_type,
     price: b.price, paid: b.paid, over_amount: b.over, pay: l.pay,
     description: d.description.trim(), owner_name: d.owner_name.trim(), contact_phone: normalizePhone(d.contact_phone),
@@ -83,11 +98,13 @@ function toPayload(d) {
 function validate(step, d, admin) {
   if (step === 2 && !admin && !d.photo) return 'ارفع صورة القطعة أو الخريطة وعليها سهم على مكان القطعة.';
   const received = d.land_status === RECEIVED_STATUS;
-  if (step === 1 && !(num(d.area_final) > 0 || num(d.area_orig) > 0)) return 'اكتب المساحة.';
+  if (step === 1 && !(num(d.area_orig) > 0)) return 'اكتب أصل المساحة.';
+  if (step === 1 && num(d.area_orig) < LEGAL.minArea) return `أقل مساحة ${LEGAL.minArea} م².`;
+  if (step === 1 && !(eff(d).area_final > 0)) return 'اكتب المساحة بعد التقنين.';
   if (step === 1 && !d.land_status) return 'اختار حالة القطعة.';
   if (step === 1 && received && !d.received) return 'اختار تاريخ الاستلام (الشهر والسنة).';
   if (step === 3) {
-    const inst = num(d.pay.inst.value) > 0;
+    const inst = eff(d).instValue > 0;
     if (String(d.over_amount).trim() === '') return 'اكتب الأوفر المطلوب.';
     if (inst && received && (!d.pay.inst.first || !d.pay.inst.last)) return 'القطعة مستلمة: اختار موعد أول قسط وآخر قسط.';
     if (inst && received && monthBefore(d.pay.inst.last, d.pay.inst.first)) return 'موعد آخر قسط لازم يكون بعد أول قسط.';
@@ -164,6 +181,14 @@ function PhotoField({ value, onChange, required }) {
   );
 }
 
+// Shows whether a value comes from the calculation, with a way back to it after an edit.
+function AutoTag({ manual, onReset, hasCalc }) {
+  if (!hasCalc) return null;
+  return manual
+    ? <button type="button" className="auto-reset" onClick={onReset}>معدّل يدوياً · رجّع للتلقائي</button>
+    : <small className="auto-on">تلقائي من أصل المساحة</small>;
+}
+
 // One payment item: name, its amount, and where it goes (المطلوب دفعه / المتبقي).
 function PayItem({ title, amount, route, hint, children }) {
   return (
@@ -179,10 +204,10 @@ function PayItem({ title, amount, route, hint, children }) {
   );
 }
 
-function Money({ id, label, value, onChange, full }) {
+function Money({ id, label, value, onChange, full, tag }) {
   return (
     <div className={`field${full ? ' full' : ''}`}>
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{label} {tag}</label>
       <input id={id} type="number" inputMode="numeric" min="0" value={value} onChange={(e) => onChange(e.target.value)} />
       <span className="hint num">{value ? `${money(num(value))} ج` : ''}</span>
     </div>
@@ -212,14 +237,18 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
   const set = (k, v) => setD((s) => ({ ...s, [k]: v }));
   const setPay = (k, v) => setD((s) => ({ ...s, pay: { ...s.pay, [k]: v } }));
   const setInst = (k, v) => setD((s) => ({ ...s, pay: { ...s.pay, inst: { ...s.pay.inst, [k]: v } } }));
+  const edit = (k, apply) => setD((s) => ({ ...apply(s), manual: { ...s.manual, [k]: true } }));
+  const reset = (k) => setD((s) => ({ ...s, manual: { ...s.manual, [k]: false } }));
   const go = (n) => { setError(''); setStep(n); sheet.current?.scrollTo({ top: 0 }); };
 
   const b = breakdown(asListing(d));
-  const area = areaIn(d);
+  const e = eff(d);
+  const c = e.calc;
+  const area = e.area_final;
+  const tag = (k) => <AutoTag hasCalc={!!c} manual={!!d.manual?.[k]} onReset={() => reset(k)} />;
   const received = d.land_status === RECEIVED_STATUS;
   const checkUnpaid = d.land_status === CHECK_UNPAID_STATUS;
   const notAllocated = NOT_ALLOCATED.includes(d.land_status);
-  const checkTier = checkByArea(area);
   // Names (no amounts) of what makes up المتبقي, for the quick review.
   const remItems = [
     b.check > 0 && !b.checkPaid && 'شيك التقنين',
@@ -277,9 +306,24 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
         {step === 1 && (
           <div className="grid">
             <div className="field"><label htmlFor="w-ao">أصل المساحة (م²)</label>
-              <input id="w-ao" type="number" inputMode="decimal" min="0" value={d.area_orig} onChange={(e) => set('area_orig', e.target.value)} /></div>
-            <div className="field"><label htmlFor="w-af">المساحة بعد التقنين (م²)</label>
-              <input id="w-af" type="number" inputMode="decimal" min="0" value={d.area_final} onChange={(e) => set('area_final', e.target.value)} /></div>
+              <input id="w-ao" type="number" inputMode="decimal" min="0" value={d.area_orig} onChange={(ev) => setD((s) => ({ ...s, area_orig: ev.target.value, tier: '' }))} /></div>
+            <div className="field"><label htmlFor="w-af">المساحة بعد التقنين (م²) {tag('area_final')}</label>
+              <input id="w-af" type="number" inputMode="decimal" min="0" value={c && !d.manual?.area_final ? c.tier : d.area_final}
+                onChange={(ev) => edit('area_final', (s) => ({ ...s, area_final: ev.target.value }))} /></div>
+            {c && (
+              <div className="full area-calc">
+                <span>خصم <b className="num">{c.cutPct * 100}%</b> للطرق ← صافي <b className="num">{c.net}</b> م² ← أقرب شريحة <b className="num">{c.tier}</b> م²</span>
+                {c.options.length > 1 && !d.manual?.area_final && (
+                  <div className="ex-pick">
+                    <span>مساحتك في النص تقريباً بين شريحتين، اختار:</span>
+                    {c.options.map((t) => <button key={t} type="button" aria-pressed={c.tier === t} onClick={() => set('tier', t)}><span className="num">{t}</span> م²</button>)}
+                  </div>
+                )}
+              </div>
+            )}
+            {num(d.area_orig) >= LEGAL.autoBelow && (
+              <p className="full pi-note">حسبة المساحات من 500 م² وطالع لسه بتتراجع، فاكتب المساحة بعد التقنين وأرقام الدفع بنفسك.</p>
+            )}
             <div className="field full"><label htmlFor="w-status">الحالة</label>
               <select id="w-status" value={d.land_status || ''} onChange={(e) => set('land_status', Number(e.target.value) || 0)}>
                 <option value="">اختار الحالة</option>
@@ -328,25 +372,33 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                 <small>المطلوب دفعه ولكن لا يدفع (يدفعه المشتري لاحقاً)</small></div>
             </div>
 
+            {c && (
+              <details className="ex-wrap" open>
+                <summary>إزاي اتحسبت؟ <small>(شرح تقدر تقوله للعميل)</small></summary>
+                <Explain c={c} onPick={d.manual?.area_final ? null : (t) => set('tier', t)} />
+              </details>
+            )}
+
             <h4 className="pay-h">البنود</h4>
 
             <PayItem title="شيك التقنين" amount={b.check} route={d.land_status ? (checkUnpaid ? 'rem' : 'paid') : ''}
-              hint={checkTier != null ? `حسب المساحة ${area} م²` : ''}>
-              {!area && <p className="pi-note">اكتب المساحة في الخطوة التانية والشيك هيتحسب لوحده.</p>}
-              {area > 0 && checkTier == null && (
-                <Money id="w-check" label="المساحة خارج الشرايح، اكتب قيمة الشيك" value={d.check_manual} onChange={(v) => set('check_manual', v)} />
-              )}
+              hint={checkFor(num(d.area_orig)) != null ? `حسب أصل المساحة ${num(d.area_orig)} م²` : ''}>
+              <Money id="w-check" label="قيمة الشيك (جنيه)" tag={<AutoTag hasCalc={checkFor(num(d.area_orig)) != null} manual={!!d.manual?.check} onReset={() => reset('check')} />}
+                value={d.manual?.check || checkFor(num(d.area_orig)) == null ? d.check_manual : e.check}
+                onChange={(v) => edit('check', (s) => ({ ...s, check_manual: v }))} />
               {!d.land_status && <p className="pi-note">اختار الحالة علشان يتحدد الشيك يتضاف فين.</p>}
             </PayItem>
 
             <PayItem title="مصاريف التنازل" amount={b.waiver} route={b.waiver ? 'rem' : ''}
-              hint={area ? `${WAIVER_PER_M} ج × ${area} م²` : ''}>
+              hint={area ? `${WAIVER_PER_M} ج × ${area} م² (المساحة بعد التقنين)` : ''}>
               {!area && <p className="pi-note">بتتحسب لوحدها من المساحة.</p>}
             </PayItem>
 
-            <PayItem title="دفعة الاستكمال" amount={b.comp || null} route={b.comp ? (b.compPaid ? 'paid' : 'rem') : ''} hint="سيبها فاضية لو مفيش">
+            <PayItem title="دفعة الاستكمال" amount={b.comp || null} route={b.comp ? (b.compPaid ? 'paid' : 'rem') : ''} hint={c ? 'ربع التكلفة − شيك التقنين، وبتتدفع بالفيزا' : 'سيبها فاضية لو مفيش'}>
               <div className="grid">
-                <Money id="w-comp" label="قيمة الاستكمال (جنيه)" value={d.pay.completion} onChange={(v) => setPay('completion', v)} />
+                <Money id="w-comp" label="قيمة الاستكمال (جنيه)" tag={tag('completion')}
+                  value={c && !d.manual?.completion ? e.completion : d.pay.completion}
+                  onChange={(v) => edit('completion', (s) => ({ ...s, pay: { ...s.pay, completion: v } }))} />
                 {notAllocated
                   ? <p className="pi-note">القطعة لسه مش مخصصة، فالاستكمال بيروح للمتبقي.</p>
                   : <label className="chk"><input type="checkbox" checked={!!d.pay.completion_paid} onChange={(e) => setPay('completion_paid', e.target.checked)} /> دفعت الاستكمال</label>}
@@ -356,9 +408,11 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               </div>
             </PayItem>
 
-            <PayItem title="الأقساط" amount={b.inst ? b.inst.value * INST_COUNT : null} hint="سيبها فاضية لو مفيش أقساط">
+            <PayItem title="الأقساط" amount={b.inst ? b.inst.value * INST_COUNT : null} hint={c ? '3 أقساط، كل قسط = ربع التكلفة' : 'سيبها فاضية لو مفيش أقساط'}>
               <div className="grid">
-                <Money id="w-iv" label="قيمة القسط" value={d.pay.inst.value} onChange={(v) => setInst('value', v)} />
+                <Money id="w-iv" label="قيمة القسط" tag={tag('inst')}
+                  value={c && !d.manual?.inst ? e.instValue : d.pay.inst.value}
+                  onChange={(v) => edit('inst', (s) => ({ ...s, pay: { ...s.pay, inst: { ...s.pay.inst, value: v } } }))} />
                 <div className="field"><label htmlFor="w-ic">عدد الأقساط</label>
                   <input id="w-ic" disabled value={INST_COUNT} readOnly /></div>
                 <Month id="w-if" label={`موعد أول قسط${received ? ' · إجباري' : ''}`} value={d.pay.inst.first} onChange={(v) => setInst('first', v)}
@@ -389,7 +443,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             <div className="field full"><span className="lbl">مراجعة سريعة</span>
               <dl className="summary">
                 <dt>المكان</dt><dd>{[SITE.governorate, d.zone, d.district, d.neighborhood].filter(Boolean).join(' · ')}</dd>
-                <dt>المساحة</dt><dd><span className="num">{d.area_final || d.area_orig}</span> م²</dd>
+                <dt>المساحة</dt><dd><span className="num">{area}</span> م²{num(d.area_orig) && num(d.area_orig) !== area ? <small className="muted"> (أصلها <span className="num">{num(d.area_orig)}</span> م²)</small> : null}</dd>
                 <dt>الحالة</dt><dd>{statusLabel(d.land_status)}</dd>
                 <dt>إجمالي المتبقي</dt><dd><b className="num">{money(b.remaining)} ج</b>
                   {remItems.length > 0 && <ul className="rem-items">{remItems.map((t) => <li key={t}>{t}</li>)}</ul>}</dd>
