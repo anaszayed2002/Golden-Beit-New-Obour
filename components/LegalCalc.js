@@ -93,11 +93,9 @@ const SEAL_PTS = Array.from({ length: 48 }, (_, i) => {
   return `${(50 + r * Math.cos(ang)).toFixed(2)},${(50 + r * Math.sin(ang)).toFixed(2)}`;
 }).join(' ');
 
-// A gold seal fixed on the left edge, with the full note as a faint watermark behind the page.
+// A gold seal fixed on the left edge; the full note sits beside it in a very faint box.
 export function PriceSeal() {
   return (
-    <>
-    <p className="price-watermark" role="note">{PRICE_NOTE}</p>
     <div className="price-seal">
       <span className="seal-badge" aria-hidden="true">
         <svg viewBox="0 0 100 118" aria-hidden="true">
@@ -116,7 +114,7 @@ export function PriceSeal() {
           </defs>
         </svg>
       </span>
+      <p className="seal-note" role="note">{PRICE_NOTE}</p>
     </div>
-    </>
   );
 }

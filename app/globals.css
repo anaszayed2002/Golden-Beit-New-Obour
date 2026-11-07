@@ -821,3 +821,11 @@ table.cmp td { text-align: center; min-width: 8em; }
 .month-empty input { color: transparent; width: 100%; }
 .month-empty input::-webkit-datetime-edit { opacity: 0; }
 .month-empty i { position: absolute; right: 16px; direction: rtl; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--muted); pointer-events: none; }
+
+/* v15: the note as a faint box tucked under the seal, to its right */
+.price-watermark { display: none; }
+.price-seal { align-items: center; gap: 0; }
+.price-seal .seal-badge { position: relative; z-index: 2; flex: none; }
+.price-seal .seal-note { position: relative; z-index: 1; margin: 0 0 0 -16px; padding: 10px 12px 10px 22px; max-width: min(260px, calc(100vw - 96px));
+  direction: rtl; background: #ffffffb3; color: var(--forest); border: 2px solid #e6c46a; border-radius: 16px; font-size: 13.5px; line-height: 1.9; font-weight: 600;
+  opacity: .42; box-shadow: none; pointer-events: none; user-select: none; }
