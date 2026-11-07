@@ -831,3 +831,37 @@ table.cmp td { text-align: center; min-width: 8em; }
   opacity: .42; box-shadow: none; pointer-events: none; user-select: none; }
 .price-seal .seal-badge { height: 68px; }
 @media (min-width: 900px) { .price-seal .seal-badge { height: 84px; } }
+
+/* v16: frozen totals ("mirror") with a thread line from the total to its parts */
+.ptotals.mirror { position: sticky; top: var(--wz-top, 66px); z-index: 1; display: flex; flex-direction: column; gap: 8px; margin: 0 -8px 4px; padding: 8px;
+  background: #fffffff2; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 0 0 20px 20px; box-shadow: 0 12px 22px -16px #0A302266; }
+.ptotals.mirror .pt { padding: 9px 12px; border-radius: 14px; }
+.ptotals.mirror .pt.hero-t b { font-size: 25px; line-height: 1.25; }
+.ptotals.mirror .pt > small { font-size: 11px; line-height: 1.45; }
+.pt-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.pt-row > span { font-size: 12.5px; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
+.pt-row > span small { font-size: 10.5px; background: #fff; border-radius: 99px; padding: 0 7px; color: var(--muted); }
+.ptotals.mirror .pt-row b { font-size: 17px; }
+.pt-tree { display: flex; flex-direction: column; gap: 8px; padding-inline-start: 22px; }
+.pt-tree .branch { position: relative; }
+.pt-tree .branch::before { content: ''; position: absolute; inset-inline-start: -15px; top: -8px; width: 12px; height: calc(8px + 18px);
+  border: 0 solid #c9d6cf; border-inline-start-width: 2px; border-bottom-width: 2px; border-end-start-radius: 12px; }
+.pt-tree .branch:not(:last-child)::after { content: ''; position: absolute; inset-inline-start: -15px; top: -8px; bottom: -8px; border-inline-start: 2px solid #c9d6cf; }
+.pt-over { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 5px; padding: 5px 10px; border: 1.5px dashed #c9a640; border-radius: 10px;
+  background: #fbf4e1; color: var(--gold-ink); font: inherit; font-size: 12px; cursor: pointer; text-align: start; }
+.pt-over > span b { font-size: 13.5px; color: var(--forest); }
+.pt-over u { text-decoration: none; font-weight: 800; color: var(--forest); border-bottom: 2px solid #c9a640; padding-bottom: 1px; }
+#w-over { scroll-margin-top: 300px; }
+/* v16b: tighter frozen totals; seal moved below them */
+.ptotals.mirror { top: 68px; gap: 6px; padding: 6px 8px 8px; }
+.ptotals.mirror .pt.hero-t { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 8px; padding: 8px 12px; }
+.ptotals.mirror .pt.hero-t > small { grid-column: 1 / -1; }
+.ptotals.mirror .pt.hero-t b { font-size: 23px; }
+.ptotals.mirror .pt { padding: 7px 11px; }
+.ptotals.mirror .pt > small { font-size: 10.5px; line-height: 1.4; }
+.pt-tree { gap: 6px; padding-inline-start: 18px; }
+.pt-tree .branch::before { inset-inline-start: -13px; top: -6px; width: 13px; height: 22px; }
+.pt-tree .branch:not(:last-child)::after { inset-inline-start: -13px; top: -6px; bottom: -6px; }
+.pt-over { margin-top: 4px; padding: 3px 9px; }
+.price-seal { top: 64%; }
+.pt-tree .branch::before, .pt-tree .branch:not(:last-child)::after { border-color: #aabfb4; }

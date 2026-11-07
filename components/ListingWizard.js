@@ -385,6 +385,29 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
         {step === 3 && (
           <div className="pay-step">
+            <div className="ptotals mirror" aria-live="polite">
+              <div className="pt hero-t">
+                <span>السعر الكلي <small>تلقائي</small></span>
+                <b><i className="num">{money(b.price)}</i> ج</b>
+                <small>المطلوب دفعه (شامل الأوفر) + المتبقي</small>
+              </div>
+              <div className="pt-tree">
+                <div className="pt paid-t branch">
+                  <div className="pt-row"><span>المطلوب دفعه <small>تلقائي</small></span>
+                    {b.paid ? <b><i className="num">{money(b.paid)}</i> ج</b> : <b className="none">—</b>}</div>
+                  <small>الأوفر المطلوب + كل اللي دفعته</small>
+                  <button type="button" className="pt-over" onClick={() => { const el = document.getElementById('w-over'); el?.focus(); el?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }}>
+                    <span>الأوفر <b className="num">{money(b.over)}</b> ج</span>
+                    <u>اضغط لكتابة الأوفر المطلوب</u>
+                  </button>
+                </div>
+                <div className="pt rem-t branch">
+                  <div className="pt-row"><span>المتبقي <small>تلقائي</small></span><b><i className="num">{money(b.remaining)}</i> ج</b></div>
+                  <small>يدفعه المشتري لاحقاً (المتبقي من الاستكمال والأقساط، والشيك لو لم يتم دفعه)</small>
+                </div>
+              </div>
+            </div>
+
             {!c && (
               <p className="calc-off">الحساب التلقائي بيشتغل لما تكتب <b>أصل المساحة</b> (من {LEGAL.minArea} لأقل من {LEGAL.autoBelow} م²) في الخطوة التانية. غير كده اكتب الأرقام بنفسك.</p>
             )}
@@ -393,19 +416,10 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               <label htmlFor="w-over">الأوفر المطلوب <em>إجباري</em></label>
               <p>المبلغ اللي عايزه فوق المدفوع، بالجنيه.</p>
               <div className="over-in">
-                <input id="w-over" type="number" inputMode="numeric" min="0" placeholder="مثلاً 500000" value={d.over_amount} onChange={(e) => set('over_amount', e.target.value)} />
+                <input id="w-over" type="number" inputMode="numeric" min="0" placeholder="مثلاً 500000" value={d.over_amount} onFocus={(e) => e.target.select()} onChange={(e) => set('over_amount', e.target.value)} />
                 <span>جنيه</span>
               </div>
               {d.over_amount !== '' && <small className="num">{money(num(d.over_amount))} ج</small>}
-            </div>
-
-            <div className="ptotals" aria-live="polite">
-              <div className="pt hero-t"><span>السعر الكلي <small>تلقائي</small></span><b><i className="num">{money(b.price)}</i> ج</b></div>
-              <div className="pt paid-t"><span>المطلوب دفعه <small>تلقائي</small></span>
-                {b.paid ? <b><i className="num">{money(b.paid)}</i> ج</b> : <b className="none">—</b>}</div>
-              <div className="pt"><span>الأوفر</span><b><i className="num">{money(b.over)}</i> ج</b><small>بيتضاف على المطلوب دفعه</small></div>
-              <div className="pt rem-t"><span>المتبقي <small>تلقائي</small></span><b><i className="num">{money(b.remaining)}</i> ج</b>
-                <small>المطلوب دفعه ولكن لا يدفع (يدفعه المشتري لاحقاً)</small></div>
             </div>
 
             <h4 className="pay-h">البنود</h4>
