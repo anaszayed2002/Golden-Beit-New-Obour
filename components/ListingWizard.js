@@ -385,8 +385,8 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
         {step === 3 && (
           <div className="pay-step">
+            <p className="pt-note" role="note">{PRICE_NOTE.split('، ').map((t, i, all) => <span key={i}>{t}{i < all.length - 1 ? '،' : ''}</span>)}</p>
             <div className="ptotals mirror" aria-live="polite">
-              <p className="pt-note" role="note">{PRICE_NOTE.split('، ').map((t, i, all) => <span key={i}>{t}{i < all.length - 1 ? '،' : ''}</span>)}</p>
               <div className="pt hero-t">
                 <span>السعر الكلي <small>تلقائي</small></span>
                 <b><i className="num">{money(b.price)}</i> ج</b>

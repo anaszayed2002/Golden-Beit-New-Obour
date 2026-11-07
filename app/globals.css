@@ -887,3 +887,7 @@ table.cmp td { text-align: center; min-width: 8em; }
 .pt-tree { gap: 8px; padding-inline-start: 20px; }
 .pt-tree .branch::before { inset-inline-start: -15px; top: -8px; width: 15px; height: 30px; border-color: #9fb5aa; border-inline-start-width: 2px; border-bottom-width: 2px; border-end-start-radius: 14px; }
 .pt-tree .branch:not(:last-child)::after { inset-inline-start: -15px; top: -8px; bottom: -8px; border-color: #9fb5aa; }
+/* v18: only the note is pinned; totals scroll with the page */
+.ptotals.mirror { position: static; margin: 0; padding: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; border-radius: 0; }
+.pay-step > .pt-note { position: sticky; top: 68px; z-index: 1; box-shadow: 0 0 0 6px var(--panel), 0 10px 18px -12px #0A302255; }
+.ptotals.mirror .pt.hero-t > small { color: #eaf3ee; font-size: 13px; font-weight: 600; }
