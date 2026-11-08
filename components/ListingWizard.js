@@ -304,35 +304,67 @@ function Month({ id, label, value, onChange, disabled, placeholder }) {
   );
 }
 
-// One calendar to pick a month and a year; starts at "غير محدد" (works the same on Android and iPhone).
+// One box that opens two scroll wheels (month, year); starts at "غير محدد". Same on Android and iPhone.
+const WHEEL_ROW = 40;
+const WHEEL_YEARS = Array.from({ length: 26 }, (_, i) => 2015 + i);
+function Wheel({ items, index, onIndex, label }) {
+  const ref = useRef(null);
+  const timer = useRef(null);
+  useEffect(() => { if (ref.current) ref.current.scrollTop = index * WHEEL_ROW; }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const onScroll = () => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      const el = ref.current;
+      if (!el) return;
+      const i = Math.max(0, Math.min(items.length - 1, Math.round(el.scrollTop / WHEEL_ROW)));
+      onIndex(i);
+    }, 70);
+  };
+  const go = (i) => { ref.current?.scrollTo({ top: i * WHEEL_ROW, behavior: 'smooth' }); onIndex(i); };
+  return (
+    <div className="wheel" role="listbox" aria-label={label}>
+      <div className="wheel-band" aria-hidden="true" />
+      <div className="wheel-scroll" ref={ref} onScroll={onScroll}>
+        {items.map((t, i) => (
+          <button key={t} type="button" role="option" aria-selected={i === index} className={i === index ? 'on' : ''} onClick={() => go(i)}>{t}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
 function MonthCal({ id, label, value, onChange }) {
   const ok = /^\d{4}-\d{2}$/.test(value || '');
+  const now = new Date();
   const [open, setOpen] = useState(false);
-  const [yr, setYr] = useState(() => (ok ? Number(value.slice(0, 4)) : new Date().getFullYear()));
-  const pick = (v) => { onChange(v); setOpen(false); };
+  const [mi, setMi] = useState(0);
+  const [yi, setYi] = useState(0);
+  const start = () => {
+    const y = ok ? Number(value.slice(0, 4)) : now.getFullYear();
+    const m = ok ? Number(value.slice(5, 7)) - 1 : now.getMonth();
+    setMi(m);
+    setYi(Math.max(0, WHEEL_YEARS.indexOf(y)));
+    setOpen(true);
+  };
+  const done = (v) => { onChange(v); setOpen(false); };
   return (
     <div className="field mcal">
       <label htmlFor={id}>{label}</label>
       <button id={id} type="button" className={`mcal-btn${ok ? '' : ' empty'}${open ? ' on' : ''}`} aria-expanded={open}
-        onClick={() => { if (!open && ok) setYr(Number(value.slice(0, 4))); setOpen((o) => !o); }}>
+        onClick={() => (open ? setOpen(false) : start())}>
         <svg className="mcal-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
         <span>{ok ? fmtMonth(value) : 'غير محدد'}</span>
         <svg className="mcal-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
       </button>
       {open && (
         <div className="mcal-pop" role="dialog" aria-label="اختار الشهر والسنة">
-          <div className="mcal-yr">
-            <button type="button" aria-label="السنة اللي قبلها" onClick={() => setYr((y) => y - 1)}>›</button>
-            <b className="num">{yr}</b>
-            <button type="button" aria-label="السنة اللي بعدها" onClick={() => setYr((y) => y + 1)}>‹</button>
+          <div className="wheels">
+            <Wheel label="الشهر" items={MONTH_NAMES} index={mi} onIndex={setMi} />
+            <Wheel label="السنة" items={WHEEL_YEARS} index={yi} onIndex={setYi} />
           </div>
-          <div className="mcal-grid">
-            {MONTH_NAMES.map((n, i) => {
-              const v = `${yr}-${String(i + 1).padStart(2, '0')}`;
-              return <button key={n} type="button" className={value === v ? 'on' : ''} aria-pressed={value === v} onClick={() => pick(v)}>{n}</button>;
-            })}
+          <div className="mcal-acts">
+            <button type="button" className="mcal-clear" onClick={() => done('')}>غير محدد</button>
+            <button type="button" className="mcal-ok" onClick={() => done(`${WHEEL_YEARS[yi]}-${String(mi + 1).padStart(2, '0')}`)}>تم</button>
           </div>
-          <button type="button" className="mcal-clear" onClick={() => pick('')}>غير محدد</button>
         </div>
       )}
     </div>

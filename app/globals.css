@@ -1156,3 +1156,15 @@ table.cmp td { text-align: center; min-width: 8em; }
 .pf-seal { flex: none; width: 34px; height: 34px; }
 .pf-seal svg { width: 100%; height: 100%; display: block; font-family: inherit; }
 .price-foot p { margin: 0; font-size: 11.5px; line-height: 1.6; font-weight: 600; color: #0A302299; }
+/* v35: month/year scroll wheels inside the calendar box */
+.wheels { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; }
+.wheel { position: relative; height: 200px; border-radius: 12px; background: #f6f5f0; overflow: hidden; }
+.wheel-band { position: absolute; left: 6px; right: 6px; top: 80px; height: 40px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1.5px var(--forest) inset; pointer-events: none; }
+.wheel-scroll { position: relative; height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; padding: 80px 0; box-sizing: border-box; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent); }
+.wheel-scroll::-webkit-scrollbar { display: none; }
+.wheel-scroll button { display: block; width: 100%; height: 40px; scroll-snap-align: center; border: 0; background: none; font: inherit; font-size: 16px; color: var(--muted); cursor: pointer; font-variant-numeric: tabular-nums; }
+.wheel-scroll button.on { color: var(--forest); font-weight: 800; font-size: 17px; }
+.mcal-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.mcal-acts .mcal-clear { margin: 0; }
+.mcal-ok { min-height: 40px; border-radius: 10px; border: 0; background: var(--forest); color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
