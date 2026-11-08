@@ -606,7 +606,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               {!area && <p className="pi-note">بتتحسب لوحدها من المساحة.</p>}
             </PayItem>
 
-            <PayItem title="دفعة الاستكمال" forceOpen={!!error} amount={b.comp || null} route={b.comp ? (b.compPaid ? 'paid' : 'rem') : ''} hint={c ? 'بتتدفع بالفيزا' : 'سيبها فاضية لو مفيش'}>
+            <PayItem title="دفعة الاستكمال" forceOpen={!!error} amount={b.comp || null} route={b.comp ? (b.compPaid ? 'paid' : 'rem') : ''} hint={c ? '' : 'سيبها فاضية لو مفيش'}>
                 <Money id="w-comp" label="قيمة الاستكمال (جنيه)" tag={tag('completion')}
                   warn={c && d.manual?.completion && r1(num(d.pay.completion)) !== r1(e.calc.completion) ? 'هذه القيمة غير منطقية' : ''}
                   value={c && !d.manual?.completion ? e.completion : d.pay.completion}
