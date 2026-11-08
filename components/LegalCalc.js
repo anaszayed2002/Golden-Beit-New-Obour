@@ -96,6 +96,8 @@ const SEAL_PTS = Array.from({ length: 48 }, (_, i) => {
 // A gold seal fixed on the left edge; the full note sits beside it in a very faint box.
 export function PriceSeal() {
   return (
+    <>
+    <p className="seal-note-bg" role="note">{PRICE_NOTE}</p>
     <div className="price-seal">
       <span className="seal-badge" aria-hidden="true">
         <svg viewBox="0 0 100 100" aria-hidden="true">
@@ -111,7 +113,7 @@ export function PriceSeal() {
           </defs>
         </svg>
       </span>
-      <p className="seal-note" role="note">{PRICE_NOTE}</p>
     </div>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { Children, useEffect, useRef, useState } from 'react';
 import {
   SITE, STATUSES, FACADES, VIEWS, PHONE_RE, RECEIVED_STATUS, WAIVER_PER_M, DISTRICTS, NEIGHBORHOODS,
   INST_COUNT, BUILD_YEARS, CHECK_UNPAID_STATUS, COMPLETED_STATUS,
@@ -253,16 +253,21 @@ function AutoTag({ manual, onReset, hasCalc }) {
 }
 
 // One payment item: name, its amount, and where it goes (المطلوب دفعه / المتبقي).
-function PayItem({ title, amount, route, remLabel = 'متبقي', hint, children }) {
+function PayItem({ title, amount, route, remLabel = 'متبقي', hint, children, forceOpen }) {
+  const [open, setOpen] = useState(false);
+  const shown = open || !!forceOpen;
+  const hasBody = !!hint || Children.toArray(children).length > 0;
   return (
-    <section className={`pitem branch tone-${route || 'none'}`}>
-      <header>
+    <section className={`pitem branch tone-${route || 'none'}${shown ? ' open' : ''}`}>
+      <button type="button" className="pi-head" aria-expanded={hasBody ? shown : undefined} disabled={!hasBody} onClick={() => setOpen((o) => !o)}>
         <b>{title}</b>
         {route && <em className={`tag ${route}`}>{route === 'paid' ? 'المطلوب دفعه' : remLabel}</em>}
         <span className="pi-amt">{amount ? <><i className="num">{money(amount)}</i> ج.م</> : '—'}</span>
-      </header>
-      {hint && <small className="pi-hint">{hint}</small>}
-      {children && <div className="pi-body">{children}</div>}
+        {hasBody && <svg className="pi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>}
+      </button>
+      {hasBody && !shown && <small className="pi-more">اضغط لعرض التفاصيل</small>}
+      {shown && hint && <small className="pi-hint">{hint}</small>}
+      {shown && Children.toArray(children).length > 0 && <div className="pi-body">{children}</div>}
     </section>
   );
 }
@@ -310,6 +315,41 @@ function Month({ id, label, value, onChange, disabled, placeholder, clearable })
           </div>
         )}
       <span className="hint">{!disabled && ok ? fmtMonth(value) : !disabled && !empty ? 'كمّل الشهر والسنة' : ''}</span>
+    </div>
+  );
+}
+
+// One calendar to pick a month and a year; starts at "غير محدد" (works the same on Android and iPhone).
+function MonthCal({ id, label, value, onChange }) {
+  const ok = /^\d{4}-\d{2}$/.test(value || '');
+  const [open, setOpen] = useState(false);
+  const [yr, setYr] = useState(() => (ok ? Number(value.slice(0, 4)) : new Date().getFullYear()));
+  const pick = (v) => { onChange(v); setOpen(false); };
+  return (
+    <div className="field mcal">
+      <label htmlFor={id}>{label}</label>
+      <button id={id} type="button" className={`mcal-btn${ok ? '' : ' empty'}${open ? ' on' : ''}`} aria-expanded={open}
+        onClick={() => { if (!open && ok) setYr(Number(value.slice(0, 4))); setOpen((o) => !o); }}>
+        <svg className="mcal-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
+        <span>{ok ? fmtMonth(value) : 'غير محدد'}</span>
+        <svg className="mcal-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+      {open && (
+        <div className="mcal-pop" role="dialog" aria-label="اختار الشهر والسنة">
+          <div className="mcal-yr">
+            <button type="button" aria-label="السنة اللي قبلها" onClick={() => setYr((y) => y - 1)}>›</button>
+            <b className="num">{yr}</b>
+            <button type="button" aria-label="السنة اللي بعدها" onClick={() => setYr((y) => y + 1)}>‹</button>
+          </div>
+          <div className="mcal-grid">
+            {MONTH_NAMES.map((n, i) => {
+              const v = `${yr}-${String(i + 1).padStart(2, '0')}`;
+              return <button key={n} type="button" className={value === v ? 'on' : ''} aria-pressed={value === v} onClick={() => pick(v)}>{n}</button>;
+            })}
+          </div>
+          <button type="button" className="mcal-clear" onClick={() => pick('')}>غير محدد</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -480,7 +520,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
         {step === 3 && (
           <div className="pay-step">
             <PriceSeal />
-            <div className={`ptotals mirror${itemsOpen || error ? ' compact' : ''}`} aria-live="polite">
+            <div className="ptotals mirror" aria-live="polite">
               <div className="pt hero-t">
                 <span>السعر الكلي <small>تلقائي</small></span>
                 <b><i className="num">{money(b.price)}</i> ج.م</b>
@@ -530,15 +570,14 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             <section className={`items-sec${itemsOpen || error ? ' open' : ''}`} id="w-items" ref={itemsRef}>
               <h4 className="items-h-wrap">
                 <button type="button" className={`items-h${itemsOpen ? ' on' : ''}`} aria-expanded={itemsOpen} aria-controls="w-items" onClick={() => setItemsOpen((o) => !o)}>
-                  <span>البنود</span>
-                  <small>{itemsOpen ? 'اضغط لإخفاء البنود' : 'اضغط لإظهار البنود'} · شيك التقنين · مصاريف التنازل · الاستكمال · الأقساط</small>
+                  <span>البنود <small>({itemsOpen ? 'اضغط لإخفاء البنود' : 'اضغط لإظهار البنود'})</small></span>
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
               </h4>
               {(itemsOpen || !!error) && (
               <div className="items-tree">
 
-            <PayItem title="شيك التقنين" amount={b.check} route={d.land_status ? (checkUnpaid ? 'rem' : 'paid') : ''}
+            <PayItem title="شيك التقنين" forceOpen={!!error} amount={b.check} route={d.land_status ? (checkUnpaid ? 'rem' : 'paid') : ''}
               hint={checkFor(num(d.area_orig)) != null ? `حسب أصل المساحة ${num(d.area_orig)} م²` : ''}>
               {checkFor(num(d.area_orig)) == null && (
                 <Money id="w-check" label="قيمة الشيك" value={d.check_manual} onChange={(v) => set('check_manual', v)} />
@@ -546,11 +585,11 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               {!d.land_status && <p className="pi-note">اختار الحالة علشان يتحدد الشيك يتضاف فين.</p>}
             </PayItem>
 
-            <PayItem title="مصاريف التنازل" amount={b.waiver} route={b.waiver ? 'rem' : ''}>
+            <PayItem title="مصاريف التنازل" forceOpen={!!error} amount={b.waiver} route={b.waiver ? 'rem' : ''}>
               {!area && <p className="pi-note">بتتحسب لوحدها من المساحة.</p>}
             </PayItem>
 
-            <PayItem title="دفعة الاستكمال" amount={b.comp || null} route={b.comp ? (b.compPaid ? 'paid' : 'rem') : ''} hint={c ? 'بتتدفع بالفيزا' : 'سيبها فاضية لو مفيش'}>
+            <PayItem title="دفعة الاستكمال" forceOpen={!!error} amount={b.comp || null} route={b.comp ? (b.compPaid ? 'paid' : 'rem') : ''} hint={c ? 'بتتدفع بالفيزا' : 'سيبها فاضية لو مفيش'}>
                 <Money id="w-comp" label="قيمة الاستكمال (جنيه)" tag={tag('completion')}
                   value={c && !d.manual?.completion ? e.completion : d.pay.completion}
                   onChange={(v) => edit('completion', (s) => ({ ...s, pay: { ...s.pay, completion: v } }))} />
@@ -558,11 +597,11 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                   ? 'القطعة مستكملة، فالاستكمال اتدفع وبيروح للمطلوب دفعه.'
                   : 'اختار الحالة علشان يتحدد الاستكمال مدفوع ولا لأ.'}</p>}
                 {d.land_status < COMPLETED_STATUS && (
-                  <Month id="w-compdue" clearable label="موعد الاستكمال" value={d.pay.completion_due} onChange={(v) => setPay('completion_due', v)} />
+                  <MonthCal id="w-compdue" label="موعد الاستكمال" value={d.pay.completion_due} onChange={(v) => setPay('completion_due', v)} />
                 )}
             </PayItem>
 
-            <PayItem title="الأقساط" amount={b.inst ? b.inst.value * INST_COUNT : null} route={b.inst ? (b.inst.leftN > 0 ? 'rem' : 'paid') : ''} hint={c ? '3 أقساط' : 'سيبها فاضية لو مفيش أقساط'}>
+            <PayItem title="الأقساط" forceOpen={!!error} amount={b.inst ? b.inst.value * INST_COUNT : null} route={b.inst ? (b.inst.leftN > 0 ? 'rem' : 'paid') : ''} hint={c ? '3 أقساط' : 'سيبها فاضية لو مفيش أقساط'}>
                 <Money id="w-iv" label="قيمة القسط" tag={tag('inst')}
                   value={c && !d.manual?.inst ? e.instValue : d.pay.inst.value}
                   onChange={(v) => edit('inst', (s) => ({ ...s, pay: { ...s.pay, inst: { ...s.pay.inst, value: v } } }))} />
