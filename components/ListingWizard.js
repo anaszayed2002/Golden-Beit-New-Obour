@@ -7,7 +7,7 @@ import {
   breakdown, checkFor, legalCalc, LEGAL, addYears, fmtMonth, monthBefore,
 } from '@/lib/site';
 import SheetTop from './SheetTop';
-import { r1 } from '@/lib/site';
+import { r1, origRangeFor } from '@/lib/site';
 import { PriceSeal } from './LegalCalc';
 import { uploadPhoto, photoUrl } from '@/lib/supabase';
 
@@ -16,7 +16,7 @@ const STEP_NAMES = ['المكان', 'المساحة والحالة', 'الممي
 const blank = () => ({
   zone: '', district: '', neighborhood: '', block: '', plot_number: '',
   area_orig: '', area_final: '', land_status: 0, facade: '', view_type: '', received: '',
-  over_amount: '', check_manual: '', photo: '', tier: '', manual: {},
+  over_amount: '', check_manual: '', photo: '', tier: '', tierCap: '', manual: {},
   pay: { completion: '', completion_paid: false, completion_due: '', inst: { value: '', first: '', last: '' } },
   description: '', owner_name: '', contact_phone: '',
 });
@@ -185,9 +185,12 @@ function PhotoField({ value, onChange, required }) {
 }
 
 // المساحة بعد التقنين: a slider over the official tiers.
-function TierSlider({ value, suggested, onChange, onClear }) {
+// cap: the tier the seller settled on; the slider can only go down from it. showRange: hint the original area for the chosen tier.
+function TierSlider({ value, suggested, onChange, onClear, cap, showRange }) {
   const tiers = LEGAL.tiers;
   const idx = tiers.indexOf(Number(value));
+  const capIdx = cap ? tiers.indexOf(Number(cap)) : tiers.length - 1;
+  const range = showRange && idx >= 0 ? origRangeFor(value) : null;
   return (
     <div className="field full tier-field">
       <span className="lbl">المساحة بعد التقنين <small className="auto-tag">اختياري</small></span>
@@ -196,8 +199,10 @@ function TierSlider({ value, suggested, onChange, onClear }) {
         {idx >= 0 && onClear && <button type="button" className="auto-reset" onClick={onClear}>مسح</button>}
       </div>
       <input type="range" className="tier-range" min={0} max={tiers.length - 1} step={1} value={idx >= 0 ? idx : 0}
-        aria-label="المساحة بعد التقنين" onChange={(ev) => onChange(tiers[Number(ev.target.value)])} />
-      <div className="tier-ticks" aria-hidden="true">{tiers.map((t) => <span key={t} className={t === Number(value) ? 'on' : ''}>{t}</span>)}</div>
+        aria-label="المساحة بعد التقنين" onChange={(ev) => onChange(tiers[Math.min(Number(ev.target.value), capIdx)])} />
+      <div className="tier-ticks" aria-hidden="true">{tiers.map((t, i) => <span key={t} className={t === Number(value) ? 'on' : i > capIdx ? 'off' : ''}>{t}</span>)}</div>
+      {cap && capIdx < tiers.length - 1 && <small className="tier-cap">تقدر تقلل المساحة بس، مش تزوّدها عن <b className="num">{cap}</b> م²</small>}
+      {range && <small className="tier-range-hint">أصل المساحة تقريباً {range.to ? <>من <b className="num">{range.from}</b> لـ <b className="num">{range.to}</b> م²</> : <>من <b className="num">{range.from}</b> م² وطالع</>}</small>}
     </div>
   );
 }
@@ -466,10 +471,11 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
         {step === 1 && (
           <div className="grid">
             <div className="field"><label htmlFor="w-ao">أصل المساحة (م²)</label>
-              <input id="w-ao" type="number" inputMode="decimal" min="0" value={d.area_orig} onChange={(ev) => setD((s) => ({ ...s, area_orig: ev.target.value, tier: '' }))} /></div>
+              <input id="w-ao" type="number" inputMode="decimal" min="0" value={d.area_orig} onChange={(ev) => setD((s) => ({ ...s, area_orig: ev.target.value, tier: '', tierCap: '' }))} /></div>
             {c ? (
               <>
-                <TierSlider value={c.tier} suggested={legalCalc(num(d.area_orig)).tier} onChange={(t) => set('tier', t)} />
+                <TierSlider value={c.tier} suggested={legalCalc(num(d.area_orig)).tier} onChange={(t) => set('tier', t)}
+                  cap={d.tierCap || Math.max(legalCalc(num(d.area_orig)).tier, Number(d.tier) || 0)} />
                 <div className="full area-calc">
                   <span>الصافي بعد الطرق <b className="num">{c.net}</b> م²</span>
                   <span className="muted">الشريحة بتتحدد على الصافي بعد خصم الطرق، مش على أصل المساحة.</span>
@@ -479,7 +485,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                       {c.options.map((t) => {
                         const diff = r1(Math.abs(t - c.net));
                         return (
-                          <button key={t} type="button" aria-pressed={c.tier === t} onClick={() => set('tier', t)}>
+                          <button key={t} type="button" aria-pressed={c.tier === t} onClick={() => setD((s) => ({ ...s, tier: t, tierCap: t }))}>
                             <b className="num">{t}</b> م²
                             <small>{t > c.net ? <>تشتري <span className="num">{diff}</span> م²</> : <>تبيع <span className="num">{diff}</span> م²</>}</small>
                           </button>
@@ -490,7 +496,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
                 </div>
               </>
             ) : (
-              <TierSlider value={d.area_final} onChange={(t) => set('area_final', t)} onClear={() => set('area_final', '')} />
+              <TierSlider value={d.area_final} onChange={(t) => set('area_final', t)} onClear={() => set('area_final', '')} showRange={!num(d.area_orig)} />
             )}
             {num(d.area_orig) >= LEGAL.autoBelow && (
               <p className="full pi-note">حسبة المساحات من 500 م² وطالع لسه بتتراجع، فاكتب المساحة بعد التقنين وأرقام الدفع بنفسك.</p>

@@ -1132,3 +1132,8 @@ table.cmp td { text-align: center; min-width: 8em; }
 .sheet.wizard { isolation: isolate; }
 .seal-note-bg { position: fixed; z-index: -1; left: max(66px, calc(env(safe-area-inset-left, 0px) + 66px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   margin: 0; max-width: min(220px, calc(100vw - 96px)); font-size: 12.5px; line-height: 1.8; font-weight: 700; color: var(--forest); opacity: .28; pointer-events: none; user-select: none; }
+
+/* v31: slider can only go down from the chosen tier; original-area hint for a chosen tier */
+.tier-ticks span.off { opacity: .35; text-decoration: line-through; }
+.tier-cap { font-size: 12px; color: var(--gold-ink); }
+.tier-range-hint { font-size: 13px; color: var(--forest); background: #e9f3ee; border-radius: 10px; padding: 7px 10px; }
