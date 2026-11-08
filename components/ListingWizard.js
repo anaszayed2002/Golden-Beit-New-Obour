@@ -277,7 +277,7 @@ function PayItem({ title, amount, route, remLabel = 'متبقي', hint, children
   );
 }
 
-function Money({ id, label, value, onChange, full, tag }) {
+function Money({ id, label, value, onChange, full, tag, warn }) {
   return (
     <div className={`field${full ? ' full' : ''}`}>
       <label htmlFor={id}>{label}</label>
@@ -286,6 +286,7 @@ function Money({ id, label, value, onChange, full, tag }) {
         {tag}
       </div>
       <span className="hint num">{value ? `${money(num(value))} ج.م` : ''}</span>
+      {warn && <span className="field-warn" role="alert">{warn}</span>}
     </div>
   );
 }
@@ -597,6 +598,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
             <PayItem title="دفعة الاستكمال" forceOpen={!!error} amount={b.comp || null} route={b.comp ? (b.compPaid ? 'paid' : 'rem') : ''} hint={c ? 'بتتدفع بالفيزا' : 'سيبها فاضية لو مفيش'}>
                 <Money id="w-comp" label="قيمة الاستكمال (جنيه)" tag={tag('completion')}
+                  warn={c && d.manual?.completion && r1(num(d.pay.completion)) !== r1(e.calc.completion) ? 'هذه القيمة غير منطقية' : ''}
                   value={c && !d.manual?.completion ? e.completion : d.pay.completion}
                   onChange={(v) => edit('completion', (s) => ({ ...s, pay: { ...s.pay, completion: v } }))} />
                 {(d.land_status >= COMPLETED_STATUS || !d.land_status) && <p className="pi-note">{d.land_status >= COMPLETED_STATUS
