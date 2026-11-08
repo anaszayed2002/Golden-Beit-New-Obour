@@ -8,7 +8,7 @@ import {
 } from '@/lib/site';
 import SheetTop from './SheetTop';
 import { r1, origRangeFor } from '@/lib/site';
-import { PriceSeal } from './LegalCalc';
+import { PriceFoot } from './LegalCalc';
 import { uploadPhoto, photoUrl } from '@/lib/supabase';
 
 const STEP_NAMES = ['المكان', 'المساحة والحالة', 'المميزات والصورة', 'السعر والدفع', 'البيانات'];
@@ -265,8 +265,10 @@ function PayItem({ title, amount, route, remLabel = 'متبقي', hint, children
   return (
     <section className={`pitem branch tone-${route || 'none'}${shown ? ' open' : ''}`}>
       <button type="button" className="pi-head" aria-expanded={hasBody ? shown : undefined} disabled={!hasBody} onClick={() => setOpen((o) => !o)}>
-        <b>{title}</b>
-        {route && <em className={`tag ${route}`}>{route === 'paid' ? 'المطلوب دفعه' : remLabel}</em>}
+        <span className="pi-name">
+          <b>{title}</b>
+          {route && <em className={`tag ${route}`}>{route === 'paid' ? 'المطلوب دفعه' : remLabel}</em>}
+        </span>
         <span className="pi-amt">{amount ? <><i className="num">{money(amount)}</i> ج.م</> : '—'}</span>
         {hasBody && <svg className="pi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>}
       </button>
@@ -503,7 +505,6 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
         {step === 3 && (
           <div className="pay-step">
-            <PriceSeal />
             <div className="ptotals mirror" aria-live="polite">
               <div className="pt hero-t">
                 <span>السعر الكلي <small>تلقائي</small></span>
@@ -643,6 +644,7 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
 
         {error && <p className="form-error" role="alert">{error}</p>}
         <div className="wz-actions">
+          {step === 3 && <PriceFoot />}
           {step > 0 && <button type="button" className="btn" onClick={() => go(step - 1)}>رجوع</button>}
           <button type="submit" className="btn primary" disabled={busy}>
             {busy ? 'استنى...' : !last ? 'التالي' : admin ? (editId ? 'حفظ التعديلات' : 'إضافة ونشر') : 'ابعت للمراجعة'}

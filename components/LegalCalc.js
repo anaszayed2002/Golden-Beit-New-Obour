@@ -93,6 +93,33 @@ const SEAL_PTS = Array.from({ length: 48 }, (_, i) => {
   return `${(50 + r * Math.cos(ang)).toFixed(2)},${(50 + r * Math.sin(ang)).toFixed(2)}`;
 }).join(' ');
 
+function SealSvg() {
+  return (
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <polygon points={SEAL_PTS} fill="url(#seal-gold)" stroke="#9a7417" strokeWidth="1.2" strokeLinejoin="round" />
+      <circle cx="50" cy="50" r="34" fill="#0A3022" stroke="#f3d77a" strokeWidth="2.5" />
+      <circle cx="50" cy="50" r="29.5" fill="none" stroke="#f3d77a55" strokeWidth="1" />
+      <text x="50" y="49" textAnchor="middle" fontSize="12.5" fontWeight="800" fill="#fff">أسعار</text>
+      <text x="50" y="64" textAnchor="middle" fontSize="11" fontWeight="800" fill="#f3d77a">استرشادية</text>
+      <defs>
+        <linearGradient id="seal-gold" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fbe7a1" /><stop offset=".5" stopColor="#d9a92e" /><stop offset="1" stopColor="#a87b14" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+// The note in the wizard's sticky footer, above the buttons: always readable, never on top of the form.
+export function PriceFoot() {
+  return (
+    <div className="price-foot" role="note">
+      <span className="pf-seal" aria-hidden="true"><SealSvg /></span>
+      <p>{PRICE_NOTE}</p>
+    </div>
+  );
+}
+
 // A gold seal fixed on the left edge; the full note sits beside it in a very faint box.
 export function PriceSeal() {
   return (
@@ -100,18 +127,7 @@ export function PriceSeal() {
     <p className="seal-note-bg" role="note">{PRICE_NOTE}</p>
     <div className="price-seal">
       <span className="seal-badge" aria-hidden="true">
-        <svg viewBox="0 0 100 100" aria-hidden="true">
-          <polygon points={SEAL_PTS} fill="url(#seal-gold)" stroke="#9a7417" strokeWidth="1.2" strokeLinejoin="round" />
-          <circle cx="50" cy="50" r="34" fill="#0A3022" stroke="#f3d77a" strokeWidth="2.5" />
-          <circle cx="50" cy="50" r="29.5" fill="none" stroke="#f3d77a55" strokeWidth="1" />
-          <text x="50" y="49" textAnchor="middle" fontSize="12.5" fontWeight="800" fill="#fff">أسعار</text>
-          <text x="50" y="64" textAnchor="middle" fontSize="11" fontWeight="800" fill="#f3d77a">استرشادية</text>
-          <defs>
-            <linearGradient id="seal-gold" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#fbe7a1" /><stop offset=".5" stopColor="#d9a92e" /><stop offset="1" stopColor="#a87b14" />
-            </linearGradient>
-          </defs>
-        </svg>
+        <SealSvg />
       </span>
     </div>
     </>

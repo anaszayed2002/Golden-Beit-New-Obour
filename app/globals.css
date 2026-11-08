@@ -1142,3 +1142,17 @@ table.cmp td { text-align: center; min-width: 8em; }
 .seal-note-bg { z-index: 6; opacity: 1; color: #0A30229c; font-weight: 700; padding: 8px 10px 8px 14px; border-radius: 14px;
   background: #fffdf78c; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); border: 1px solid #e6c46a55; left: max(58px, calc(env(safe-area-inset-left, 0px) + 58px)); }
 .seal-note-bg { color: #0A302275; background: #fffdf759; -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px); border-color: #e6c46a33; }
+
+/* v34: item header never overflows; tag stays on one line */
+.pi-head { gap: 8px; min-width: 0; }
+.pi-name { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; flex: 1; min-width: 0; }
+.pi-name .tag { white-space: nowrap; }
+.pi-head .pi-amt { flex: none; margin-inline-start: 0; font-size: 16px; }
+.pi-head .pi-chev { flex: none; }
+
+/* guidance note lives in the sticky footer, above the buttons */
+.wz-actions { flex-wrap: wrap; }
+.price-foot { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; margin: 0 0 2px; padding: 6px 10px; border-radius: 12px; background: #fbf4e1b3; border: 1px solid #ecdcae; }
+.pf-seal { flex: none; width: 34px; height: 34px; }
+.pf-seal svg { width: 100%; height: 100%; display: block; font-family: inherit; }
+.price-foot p { margin: 0; font-size: 11.5px; line-height: 1.6; font-weight: 600; color: #0A302299; }
