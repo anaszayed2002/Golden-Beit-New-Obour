@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import {
   SITE, STATUSES, FACADES, VIEWS, RECEIVED_STATUS, PHONE_RE, money, listingCode, waLink, areaOf,
   remainingOf, hasPayment, payRows, statusLabel, parseCode, normalizePhone, serverError, toEnglishDigits,
-  DISTRICTS, NEIGHBORHOODS, instValueOf, instCountOf, instLeftCountOf, breakdown, deliveryRows, placeOf,
+  DISTRICTS, NEIGHBORHOODS, ZONE_DISTRICTS, zoneOfDistrict, instValueOf, instCountOf, instLeftCountOf, breakdown, deliveryRows, placeOf,
 } from '@/lib/site';
 import StopRange from './StopRange';
 import PlotCard from './PlotCard';
@@ -216,12 +216,15 @@ export default function Market() {
         <div className={`filters${filtersOpen ? ' open' : ''}`} role="search" aria-label="الفلتر">
           <SheetTop title="الفلتر" onClose={() => setFiltersOpen(false)} />
           <div className="f"><label htmlFor="f-zone">التقسيم</label>
-            <select id="f-zone" value={filters.zone} onChange={(e) => set('zone', e.target.value)}>
+            <select id="f-zone" value={filters.zone} onChange={(e) => { const z = e.target.value; set('zone', z); if (z && filters.district && zoneOfDistrict(filters.district) !== z) set('district', ''); }}>
               <option value="">الكل</option>{SITE.zones.map((z) => <option key={z}>{z}</option>)}
             </select></div>
           <div className="f"><label htmlFor="f-dist">الحي</label>
-            <select id="f-dist" value={filters.district} onChange={(e) => set('district', e.target.value)}>
-              <option value="">الكل</option>{DISTRICTS.map((v) => <option key={v}>{v}</option>)}
+            <select id="f-dist" value={filters.district} onChange={(e) => { const v = e.target.value; set('district', v); if (zoneOfDistrict(v)) set('zone', zoneOfDistrict(v)); }}>
+              <option value="">الكل</option>
+              {Object.entries(ZONE_DISTRICTS).filter(([z]) => !filters.zone || filters.zone === z).map(([z, list]) => (
+                <optgroup key={z} label={z}>{list.map((v) => <option key={v}>{v}</option>)}</optgroup>
+              ))}
             </select></div>
           <div className="f"><label htmlFor="f-nb">المجاورة</label>
             <select id="f-nb" value={filters.neighborhood} onChange={(e) => set('neighborhood', e.target.value)}>

@@ -1,7 +1,7 @@
 'use client';
 import { Children, useEffect, useRef, useState } from 'react';
 import {
-  SITE, STATUSES, FACADES, VIEWS, PHONE_RE, RECEIVED_STATUS, WAIVER_PER_M, DISTRICTS, NEIGHBORHOODS,
+  SITE, STATUSES, FACADES, VIEWS, PHONE_RE, RECEIVED_STATUS, WAIVER_PER_M, DISTRICTS, NEIGHBORHOODS, ZONE_DISTRICTS, zoneOfDistrict,
   INST_COUNT, BUILD_YEARS, CHECK_UNPAID_STATUS, COMPLETED_STATUS,
   money, listingCode, normalizePhone, toEnglishDigits, statusLabel,
   breakdown, checkFor, legalCalc, LEGAL, addYears, fmtMonth, monthBefore,
@@ -461,13 +461,22 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
             <div className="field full"><span className="lbl">المدينة</span><div className="fixed">{SITE.governorate}</div></div>
             <div className="field full"><span className="lbl">التقسيم (الجمعية) <small className="auto-tag">اختياري</small></span>
               <div className="big-choice">
-                {SITE.zones.map((z) => <button key={z} type="button" aria-pressed={d.zone === z} onClick={() => set('zone', d.zone === z ? '' : z)}>{z}</button>)}
+                {SITE.zones.map((z) => <button key={z} type="button" aria-pressed={d.zone === z} onClick={() => setD((s) => {
+                  const zone = s.zone === z ? '' : z;
+                  // a district from the other zone no longer fits
+                  const keep = !s.district || !zone || !zoneOfDistrict(s.district) || zoneOfDistrict(s.district) === zone;
+                  return { ...s, zone, district: keep ? s.district : '' };
+                })}>{z}</button>)}
               </div></div>
             <div className="field"><label htmlFor="w-dist">الحي</label>
-              <select id="w-dist" value={d.district} onChange={(e) => set('district', e.target.value)}>
+              <select id="w-dist" value={d.district} onChange={(e) => { const v = e.target.value; setD((s) => ({ ...s, district: v, zone: zoneOfDistrict(v) || s.zone })); }}>
                 <option value="">اختياري</option>
-                {(DISTRICTS.includes(d.district) || !d.district ? DISTRICTS : [d.district, ...DISTRICTS]).map((v) => <option key={v}>{v}</option>)}
-              </select></div>
+                {d.district && !DISTRICTS.includes(d.district) && <option>{d.district}</option>}
+                {Object.entries(ZONE_DISTRICTS).filter(([z]) => !d.zone || d.zone === z).map(([z, list]) => (
+                  <optgroup key={z} label={z}>{list.map((v) => <option key={v}>{v}</option>)}</optgroup>
+                ))}
+              </select>
+              {d.district && zoneOfDistrict(d.district) && <span className="hint">تبع {zoneOfDistrict(d.district)}</span>}</div>
             <div className="field"><label htmlFor="w-nb">المجاورة</label>
               <select id="w-nb" value={d.neighborhood} onChange={(e) => set('neighborhood', e.target.value)}>
                 <option value="">اختياري</option>
@@ -654,7 +663,9 @@ export default function ListingWizard({ mode = 'public', initial, editId, onClos
               <textarea id="w-desc" maxLength={2000} placeholder="أي تفاصيل تانية عايز تقولها..." value={d.description} onChange={(e) => set('description', e.target.value)} /></div>
             <div className="field full"><span className="lbl">مراجعة سريعة</span>
               <dl className="summary">
-                <dt>المكان</dt><dd>{[SITE.governorate, d.zone, d.district, d.neighborhood].filter(Boolean).join(' · ')}</dd>
+                <dt>المكان</dt><dd>{[SITE.governorate, d.zone].filter(Boolean).join(' · ')}</dd>
+                <dt>الحي</dt><dd>{d.district || <span className="muted">مش محدد</span>}</dd>
+                {d.neighborhood && <><dt>المجاورة</dt><dd>{d.neighborhood}</dd></>}
                 <dt>المساحة</dt><dd><span className="num">{area}</span> م²{num(d.area_orig) && num(d.area_orig) !== area ? <small className="muted"> (أصلها <span className="num">{num(d.area_orig)}</span> م²)</small> : null}</dd>
                 <dt>الحالة</dt><dd>{statusLabel(d.land_status)}</dd>
                 <dt>السعر الكلي</dt><dd><b className="num">{money(b.price)} ج.م</b></dd>
