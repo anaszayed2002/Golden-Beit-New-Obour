@@ -291,36 +291,13 @@ function Money({ id, label, value, onChange, full, tag, warn }) {
   );
 }
 
-// Month + year as two lists. Starts as "—" (غير محدد); phones' own date wheels pre-fill the current month, so they are not used.
+// Dates: one box that opens a month/year calendar (MonthCal); starts at "غير محدد". Disabled dates show a placeholder.
 const MONTH_NAMES = Array.from({ length: 12 }, (_, i) => fmtMonth(`2000-${String(i + 1).padStart(2, '0')}`).split(' ')[0]);
-const YEARS = Array.from({ length: 26 }, (_, i) => String(2015 + i));
-function Month({ id, label, value, onChange, disabled, placeholder, clearable }) {
-  const ok = /^\d{4}-\d{2}$/.test(value || '');
-  const [y, setY] = useState(ok ? value.slice(0, 4) : '');
-  const [m, setM] = useState(ok ? value.slice(5, 7) : '');
-  // Only an outside change (e.g. a reset) resyncs; a half-picked month/year stays on screen.
-  const sent = useRef(value || '');
-  useEffect(() => { if ((value || '') === sent.current) return; sent.current = value || ''; setY(ok ? value.slice(0, 4) : ''); setM(ok ? value.slice(5, 7) : ''); }, [value, ok]);
-  const pick = (ny, nm) => { const v = ny && nm ? `${ny}-${nm}` : ''; sent.current = v; setY(ny); setM(nm); onChange(v); };
-  const empty = !y && !m;
+function Month({ id, label, value, onChange, disabled, placeholder }) {
+  if (!disabled) return <MonthCal id={id} label={label} value={value} onChange={onChange} />;
   return (
-    <div className="field"><label htmlFor={id}>{label}
-      {clearable && !empty && <button type="button" className="auto-reset" onClick={() => pick('', '')}>غير محدد</button>}</label>
-      {disabled
-        ? <input id={id} disabled placeholder={placeholder} />
-        : (
-          <div className="month-pick">
-            <select id={id} aria-label="الشهر" value={m} onChange={(e) => pick(y, e.target.value)}>
-              <option value="">{empty ? 'غير محدد' : 'الشهر —'}</option>
-              {MONTH_NAMES.map((n, i) => <option key={n} value={String(i + 1).padStart(2, '0')}>{n}</option>)}
-            </select>
-            <select aria-label="السنة" value={y} onChange={(e) => pick(e.target.value, m)}>
-              <option value="">{empty ? '—' : 'السنة —'}</option>
-              {YEARS.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-        )}
-      <span className="hint">{!disabled && ok ? fmtMonth(value) : !disabled && !empty ? 'كمّل الشهر والسنة' : ''}</span>
+    <div className="field"><label htmlFor={id}>{label}</label>
+      <input id={id} disabled placeholder={placeholder} />
     </div>
   );
 }
